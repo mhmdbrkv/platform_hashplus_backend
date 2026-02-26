@@ -1,5 +1,5 @@
-// import authRoutes from "./auth.route.js";
+import authRoutes from "./auth.route.js";
 
 export default (app) => {
-  //   app.use("/api/auth", authRoutes);
+  app.use("/api/v1/auth", authRoutes);
 };

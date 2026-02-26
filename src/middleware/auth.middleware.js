@@ -73,6 +73,10 @@ const guard = async (req, res, next) => {
     }
 
     // 5) Attach the user to the request object for future middleware or routes
+    // lastLogin
+    loggedUser.lastLogin = Date.now();
+    await loggedUser.save();
+
     req.user = loggedUser;
 
     // 6) Continue to the next middleware or route handler

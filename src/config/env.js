@@ -13,6 +13,13 @@ const JWT_ACCESS_EXPIRE_TIME = process.env.JWT_ACCESS_EXPIRE_TIME || "";
 const JWT_REFRESH_SECRET_KEY = process.env.JWT_REFRESH_SECRET_KEY || "";
 const JWT_REFRESH_EXPIRE_TIME = process.env.JWT_REFRESH_EXPIRE_TIME || "";
 
+const EMAIL_HOST = process.env.EMAIL_HOST || "";
+const EMAIL_PORT = process.env.EMAIL_PORT || "";
+const EMAIL_USER = process.env.EMAIL_USER || "";
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || "";
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+
 export {
   PORT,
   CLIENT_URL,
@@ -22,4 +29,9 @@ export {
   JWT_ACCESS_EXPIRE_TIME,
   JWT_REFRESH_SECRET_KEY,
   JWT_REFRESH_EXPIRE_TIME,
+  EMAIL_HOST,
+  EMAIL_PORT,
+  EMAIL_USER,
+  EMAIL_PASSWORD,
+  GOOGLE_CLIENT_ID,
 };

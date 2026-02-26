@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
-    username: {
+    name: {
       type: String,
       required: [true, "User name required"],
       trim: true,
@@ -42,15 +42,14 @@ const userSchema = new mongoose.Schema(
 );
 
 // pre-save hook to hash password before saving in db
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
   try {
-    if (!this.password) return next();
+    if (!this.password) return;
     this.password = await bcrypt.hash(this.password, 10);
-    next();
   } catch (error) {
-    next(error);
+    throw error;
   }
 });
 
