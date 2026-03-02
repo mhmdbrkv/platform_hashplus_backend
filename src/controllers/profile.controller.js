@@ -36,77 +36,22 @@ const updateMyProfile = async (req, res, next) => {
   });
 };
 
-// // Delete Logged In User Profile
-// const deleteMyProfile = async (req, res, next) => {
-//   const userId = req.user._id;
-//   const session = await mongoose.startSession();
+// Delete Logged In User Profile
+const deleteMyProfile = async (req, res, next) => {
+  const { _id } = req.user;
 
-//   try {
-//     // 1️⃣ Collect data BEFORE transaction
-//     const folders = await Folder.find({ createdBy: userId }).lean();
-//     const folderIds = folders.map((f) => f._id);
+  try {
+    await User.findByIdAndDelete(_id);
 
-//     const files = await File.find({
-//       createdBy: userId,
-//       folderId: { $in: folderIds },
-//     }).lean();
-
-//     // 2️⃣ DB TRANSACTION
-//     await session.withTransaction(async () => {
-//       await File.deleteMany({ createdBy: userId }, { session });
-
-//       await Folder.deleteMany({ createdBy: userId }, { session });
-
-//       await Stage.deleteMany({ createdBy: userId }, { session });
-//       await MCQ.deleteMany({ createdBy: userId }, { session });
-//       await Flashcard.deleteMany({ createdBy: userId }, { session });
-//       await MindMap.deleteMany({ createdBy: userId }, { session });
-//       await ChatHistory.deleteMany({ userId }, { session });
-
-//       await User.deleteOne({ _id: userId }, { session });
-//     });
-
-//     session.endSession();
-
-//     // 3️⃣ CLOUDINARY CLEANUP (BEST EFFORT)
-
-//     // Profile image
-//     if (req.user?.profileImage?.public_id) {
-//       removeImageFromCloudinary(req.user.profileImage.public_id).catch(
-//         console.error,
-//       );
-//     }
-
-//     // Profile folder
-//     removeCloudinaryFolder(`profile-images/${userId}`).catch(console.error);
-
-//     // File documents
-//     // await Promise.allSettled(
-//     //   files.map((file) => {
-//     //     if (file.public_id) {
-//     //       return removeDocumentFromCloudinary(file.public_id);
-//     //     }
-//     //   }),
-//     // );
-
-//     // Folder directories
-//     // await Promise.allSettled(
-//     //   folderIds.map((folderId) =>
-//     //     removeCloudinaryFolder(`folder-files/${folderId}`),
-//     //   ),
-//     // );
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "تم حذف الحساب وكل البيانات المرتبطة به بنجاح.",
-//     });
-//   } catch (error) {
-//     await session.abortTransaction();
-//     session.endSession();
-//     console.error("Delete profile error:", error);
-//     return next(new ApiError("حدث خطأ أثناء حذف الملف الشخصي", 500));
-//   }
-// };
+    return res.status(200).json({
+      status: "success",
+      message: "تم حذف الحساب وكل البيانات المرتبطة به بنجاح.",
+    });
+  } catch (error) {
+    console.error("Delete profile error:", error);
+    return next(new ApiError("حدث خطأ أثناء حذف الملف الشخصي", 500));
+  }
+};
 
 // // Get Logged In User Profile Image
 // const getMyProfileImage = async (req, res, next) => {
@@ -270,58 +215,58 @@ const changePassword = async (req, res, next) => {
   });
 };
 
-// // Get All User Profiles
-// const getAllProfiles = async (req, res, next) => {
-//   try {
-//     const users = await User.find().select("-password").lean();
+// Get All User Profiles
+const getAllProfiles = async (req, res, next) => {
+  try {
+    const users = await User.find().select("-password").lean();
 
-//     res.status(200).json({
-//       status: "success",
-//       message: "تم جلب جميع الملفات الشخصية بنجاح",
-//       length: users.length,
-//       data: users,
-//     });
-//   } catch (error) {
-//     console.error("Error in getAllProfiles:", error);
-//     return next(new ApiError("حدث خطأ اثناء جلب جميع الملفات الشخصية", 500));
-//   }
-// };
+    res.status(200).json({
+      status: "success",
+      message: "تم جلب جميع الملفات الشخصية بنجاح",
+      length: users.length,
+      data: users,
+    });
+  } catch (error) {
+    console.error("Error in getAllProfiles:", error);
+    return next(new ApiError("حدث خطأ اثناء جلب جميع الملفات الشخصية", 500));
+  }
+};
 
-// // Toggle User isActive Status (Admin Only)
-// const toggleUserIsActive = async (req, res, next) => {
-//   try {
-//     const { userId } = req.params;
+// Toggle User isActive Status (Admin Only)
+const toggleUserIsActive = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
 
-//     const user = await User.findById(userId).select("isActive");
-//     if (!user) return next(new ApiError("User not found", 404));
+    const user = await User.findById(userId).select("isActive");
+    if (!user) return next(new ApiError("User not found", 404));
 
-//     const updatedUser = await User.findByIdAndUpdate(
-//       userId,
-//       { isActive: !user.isActive },
-//       { new: true, select: "-password" },
-//     ).lean();
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { isActive: !user.isActive },
+      { new: true, select: "-password" },
+    ).lean();
 
-//     res.status(200).json({
-//       status: "success",
-//       message: "Profile updated successfully",
-//       data: updatedUser,
-//     });
-//   } catch (error) {
-//     console.error("Error toggling user active status:", error);
-//     return next(
-//       new ApiError(`Error toggling user active: ${error.message}`, 500),
-//     );
-//   }
-// };
+    res.status(200).json({
+      status: "success",
+      message: "Profile updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error toggling user active status:", error);
+    return next(
+      new ApiError(`Error toggling user active: ${error.message}`, 500),
+    );
+  }
+};
 
 export {
   getMyProfile,
-  // getAllProfiles,
+  getAllProfiles,
   updateMyProfile,
-  // deleteMyProfile,
+  deleteMyProfile,
   // uploadMyProfileImage,
   // deleteMyProfileImage,
-  // toggleUserIsActive,
+  toggleUserIsActive,
   // getMyProfileImage,
   changePassword,
 };

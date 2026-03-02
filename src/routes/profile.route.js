@@ -3,12 +3,12 @@ const router = express.Router();
 
 import {
   getMyProfile,
-  // getAllProfiles,
+  getAllProfiles,
   updateMyProfile,
-  // deleteMyProfile,
+  deleteMyProfile,
   // uploadMyProfileImage,
   // deleteMyProfileImage,
-  // toggleUserIsActive,
+  toggleUserIsActive,
   // getMyProfileImage,
   changePassword,
 } from "../controllers/profile.controller.js";
@@ -19,7 +19,7 @@ router.use(guard);
 
 // Logged in User Profile routes
 router.get("/", getMyProfile);
-// router.delete("/", deleteMyProfile);
+router.delete("/", deleteMyProfile);
 router.patch("/", updateMyProfile);
 // router.get("/profileImage", getMyProfileImage);
 // router.patch("/profileImage", imageUpload, uploadMyProfileImage);
@@ -27,8 +27,8 @@ router.patch("/", updateMyProfile);
 router.patch("/change-password", changePassword);
 
 // Admin Only Routes
-// router.use(allowedTo("admin"));
-// router.get("/all", getAllProfiles);
-// router.patch("/isActive/:userId", toggleUserIsActive);
+router.use(allowedTo("admin"));
+router.get("/all", getAllProfiles);
+router.patch("/isActive/:userId", toggleUserIsActive);
 
 export default router;
