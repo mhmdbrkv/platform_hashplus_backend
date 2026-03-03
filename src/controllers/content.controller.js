@@ -1,16 +1,16 @@
-import Category from "../models/category.model.js";
+import Content from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 
-const getCategories = async (req, res, next) => {
+const getContents = async (req, res, next) => {
   try {
     // Build the query
-    const numOfDocument = await Category.countDocuments();
-    const apiFeatures = new ApiFeatures(Category.find(), req.query)
+    const numOfDocument = await Content.countDocuments();
+    const apiFeatures = new ApiFeatures(Content.find(), req.query)
       .paginate(numOfDocument)
       .filter()
       .limitFields()
-      .search("Category")
+      .search("Content")
       .sort();
 
     const { mongooseQuery, pagination } = apiFeatures;
@@ -20,7 +20,7 @@ const getCategories = async (req, res, next) => {
 
     res.status(200).json({
       status: "success",
-      message: "Categories fetched successfully",
+      message: "Contents fetched successfully",
       result: docs.length,
       pagination,
       data: docs,
@@ -31,19 +31,19 @@ const getCategories = async (req, res, next) => {
   }
 };
 
-const getCategory = async (req, res, next) => {
+const getContent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const category = await Category.findById(id);
+    const content = await Content.findById(id);
 
-    if (!category) {
-      return next(new ApiError("Category not found", 404));
+    if (!content) {
+      return next(new ApiError("Content not found", 404));
     }
 
     res.status(200).json({
       status: "success",
-      message: "Category fetched successfully",
-      data: category,
+      message: "Content fetched successfully",
+      data: content,
     });
   } catch (error) {
     console.log(error);
@@ -51,21 +51,21 @@ const getCategory = async (req, res, next) => {
   }
 };
 
-const createCategory = async (req, res, next) => {
+const createContent = async (req, res, next) => {
   try {
     const { name } = req.body;
     const slug = name.toLowerCase().trim().replace(/\s+/g, "-");
 
-    const category = await Category.findOne({ slug });
-    if (category) {
-      return next(new ApiError("Category already exists", 400));
+    const content = await Content.findOne({ slug });
+    if (content) {
+      return next(new ApiError("Content already exists", 400));
     }
 
-    const newCategory = await Category.create({ name, slug });
+    const newContent = await Content.create({ name, slug });
     res.status(201).json({
       status: "success",
-      message: "Category created successfully",
-      data: newCategory,
+      message: "Content created successfully",
+      data: newContent,
     });
   } catch (error) {
     console.log(error);
@@ -73,25 +73,25 @@ const createCategory = async (req, res, next) => {
   }
 };
 
-const updateCategory = async (req, res, next) => {
+const updateContent = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
     const slug = name.toLowerCase().trim().replace(/\s+/g, "-");
-    const category = await Category.findByIdAndUpdate(
+    const content = await Content.findByIdAndUpdate(
       id,
       { name, slug },
       { new: true },
     );
 
-    if (!category) {
-      return next(new ApiError("Category not found", 404));
+    if (!content) {
+      return next(new ApiError("Content not found", 404));
     }
 
     res.status(200).json({
       status: "success",
-      message: "Category updated successfully",
-      data: category,
+      message: "Content updated successfully",
+      data: content,
     });
   } catch (error) {
     console.log(error);
@@ -99,14 +99,14 @@ const updateCategory = async (req, res, next) => {
   }
 };
 
-const deleteCategory = async (req, res, next) => {
+const deleteContent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const category = await Category.findByIdAndDelete(id);
+    const content = await Content.findByIdAndDelete(id);
     res.status(200).json({
       status: "success",
-      message: "Category deleted successfully",
-      data: category,
+      message: "Content deleted successfully",
+      data: content,
     });
   } catch (error) {
     console.log(error);
@@ -114,10 +114,4 @@ const deleteCategory = async (req, res, next) => {
   }
 };
 
-export {
-  getCategories,
-  getCategory,
-  createCategory,
-  updateCategory,
-  deleteCategory,
-};
+export { getContents, getContent, createContent, updateContent, deleteContent };

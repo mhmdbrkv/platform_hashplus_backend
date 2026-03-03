@@ -8,13 +8,13 @@ import {
   deleteCategory,
 } from "../controllers/category.controller.js";
 
-// import contentRoute from "./content.route.js";
+import contentRoute from "./content.route.js";
 import { guard } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
 //Nested Route
-// router.use("/:categoryId/content", contentRoute);
+router.use("/:categoryId/content", contentRoute);
 
 router.get("/", getCategories);
 router.get("/:id", getCategory);

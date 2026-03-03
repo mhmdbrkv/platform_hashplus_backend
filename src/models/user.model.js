@@ -5,16 +5,42 @@ const instructorDetailsSchema = new mongoose.Schema(
   {
     bio: { type: String, trim: true },
     rating: { type: Number, min: 0, max: 5 },
-    content: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
+    createdContent: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
 
     totalRating: { type: Number, default: 0 },
     totalStudents: { type: Number, default: 0 },
-    totalContent: { type: Number, default: 0 },
+    totalCreatedContent: { type: Number, default: 0 },
   },
-  { _id: false },
+  { _id: false, timestamps: true },
 );
 
-const studentDetailsSchema = new mongoose.Schema({}, { _id: false });
+const studentDetailsSchema = new mongoose.Schema(
+  {
+    bio: { type: String, trim: true },
+    enrolledContent: [
+      {
+        contentId: { type: mongoose.Schema.Types.ObjectId, ref: "Content" },
+        status: {
+          type: String,
+          enum: ["enrolled", "completed"],
+          default: "enrolled",
+        },
+        enrolledAt: { type: Date, default: Date.now },
+        completedAt: { type: Date },
+      },
+    ],
+    totalEnrolledContent: { type: Number, default: 0 },
+    certificates: [
+      {
+        contentId: { type: mongoose.Schema.Types.ObjectId, ref: "Content" },
+        certificateUrl: String,
+        issuedAt: { type: Date, default: Date.now },
+      },
+    ],
+    totalCertificates: { type: Number, default: 0 },
+  },
+  { _id: false, timestamps: true },
+);
 
 const userSchema = new mongoose.Schema(
   {
