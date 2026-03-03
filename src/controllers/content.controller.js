@@ -34,7 +34,20 @@ const getContents = async (req, res, next) => {
 const getContent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const content = await Content.findById(id);
+    const content = await Content.findById(id)
+      .populate({
+        path: "reviews",
+        select: "review rating user",
+      })
+      .populate({
+        path: "instructor",
+        select: "name profileImage",
+      })
+      .populate({
+        path: "category",
+        select: "name",
+      })
+      .lean();
 
     if (!content) {
       return next(new ApiError("Content not found", 404));

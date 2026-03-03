@@ -34,7 +34,7 @@ const getCategories = async (req, res, next) => {
 const getCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const category = await Category.findById(id);
+    const category = await Category.findById(id).lean();
 
     if (!category) {
       return next(new ApiError("Category not found", 404));
