@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 // import sharp from "sharp";
 import User from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";

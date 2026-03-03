@@ -1,6 +1,21 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
+const instructorDetailsSchema = new mongoose.Schema(
+  {
+    bio: { type: String, trim: true },
+    rating: { type: Number, min: 0, max: 5 },
+    content: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
+
+    totalRating: { type: Number, default: 0 },
+    totalStudents: { type: Number, default: 0 },
+    totalContent: { type: Number, default: 0 },
+  },
+  { _id: false },
+);
+
+const studentDetailsSchema = new mongoose.Schema({}, { _id: false });
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -20,6 +35,9 @@ const userSchema = new mongoose.Schema(
       url: String,
       uploadedAt: Date,
     },
+
+    instructorDetails: { type: instructorDetailsSchema, default: () => ({}) },
+    studentDetails: { type: studentDetailsSchema, default: () => ({}) },
 
     role: { type: String, enum: ["user", "admin"], default: "user" },
     isActive: { type: Boolean, default: true },
