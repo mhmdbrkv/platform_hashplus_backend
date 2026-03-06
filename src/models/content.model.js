@@ -1,4 +1,11 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
+
+const contentOptions = {
+  discriminatorKey: "contentType",
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+};
 
 const contentSchema = new mongoose.Schema(
   {
@@ -11,12 +18,6 @@ const contentSchema = new mongoose.Schema(
     slug: {
       type: String,
       trim: true,
-    },
-
-    type: {
-      type: String,
-      enum: ["course", "bootcamp"],
-      required: [true, "Content type required"],
     },
 
     category: {
@@ -36,11 +37,6 @@ const contentSchema = new mongoose.Schema(
       required: [true, "Content price required"],
       min: 0,
     },
-
-    // content: {
-    //   type: Mongoose.Schema,
-    //   enum: [courseSchema, bootcampSchema],
-    // },
 
     thumbnail: {
       public_id: String,
@@ -94,11 +90,7 @@ const contentSchema = new mongoose.Schema(
       },
     },
   },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  },
+  contentOptions,
 );
 
 // Virtual property for getting the reviews of the course with the response
@@ -108,6 +100,48 @@ contentSchema.virtual("reviews", {
   localField: "_id",
 });
 
+const courseSchema = new mongoose.Schema({
+  modules: [
+    {
+      title: String,
+      lessons: [
+        {
+          title: String,
+          videoUrl: String,
+          duration: Number,
+          isCompleted: { type: Boolean, default: false },
+        },
+      ],
+    },
+  ],
+  totalLessons: Number,
+  totalDuration: Number,
+  isCompleted: { type: Boolean, default: false },
+  completedAt: Date,
+});
+
+const bootcampSchema = new mongoose.Schema({
+  startDate: Date,
+  endDate: Date,
+  schedule: String,
+  projects: [
+    {
+      title: String,
+      description: String,
+      githubUrl: String,
+      liveUrl: String,
+    },
+  ],
+  totalProjects: Number,
+  isCompleted: { type: Boolean, default: false },
+  completedAt: Date,
+});
+
+// Create the parent model
 const Content = mongoose.model("Content", contentSchema);
 
-export default Content;
+// Create the child models using discriminator
+const Course = Content.discriminator("course", courseSchema);
+const Bootcamp = Content.discriminator("bootcamp", bootcampSchema);
+
+export { Content, Course, Bootcamp };
