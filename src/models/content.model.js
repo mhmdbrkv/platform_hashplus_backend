@@ -42,6 +42,16 @@ const contentSchema = new mongoose.Schema(
     //   enum: [courseSchema, bootcampSchema],
     // },
 
+    thumbnail: {
+      public_id: String,
+      url: String,
+      uploadedAt: Date,
+    },
+
+    materials: {
+      type: [String],
+    },
+
     metadata: {
       description: {
         type: String,
@@ -57,12 +67,6 @@ const contentSchema = new mongoose.Schema(
       learningPreRequisites: {
         type: [String],
         required: [true, "Content pre requisites required"],
-      },
-
-      thumbnail: {
-        public_id: String,
-        url: String,
-        uploadedAt: Date,
       },
 
       duration: {

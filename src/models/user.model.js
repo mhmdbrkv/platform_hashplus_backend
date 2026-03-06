@@ -3,13 +3,57 @@ import bcrypt from "bcrypt";
 
 const instructorDetailsSchema = new mongoose.Schema(
   {
-    bio: { type: String, trim: true },
+    bio: { type: String, trim: true, default: "" },
+    teachingStyle: { type: String, trim: true, default: "" },
+    videoProfessionality: { type: String, trim: true, default: "" },
+    targetAudience: { type: String, trim: true, default: "" },
+    skills: { type: [String], default: [] },
+    languages: {
+      type: [{ language: String, proficiency: String }],
+      default: [],
+    },
+    experience: {
+      type: [
+        {
+          company: String,
+          country: String,
+          city: String,
+          jobTitle: String,
+          jobType: String,
+          jobStyle: String,
+          startDate: Date,
+          endDate: Date,
+          skills: { type: [String], default: [] },
+          description: String,
+          isCurrent: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
+    education: {
+      type: [
+        {
+          institution: String,
+          degree: String,
+          major: String,
+          startDate: Date,
+          endDate: Date,
+          description: String,
+          isCurrent: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
+
     rating: { type: Number, min: 0, max: 5 },
     createdContent: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
 
     totalRating: { type: Number, default: 0 },
     totalStudents: { type: Number, default: 0 },
     totalCreatedContent: { type: Number, default: 0 },
+
+    isVerified: { type: Boolean, default: false },
+    verifiedAt: Date,
   },
   { _id: false, timestamps: true },
 );
