@@ -66,15 +66,21 @@ const getContent = async (req, res, next) => {
 
 const createContent = async (req, res, next) => {
   try {
-    const { name } = req.body;
-    const slug = name.toLowerCase().trim().replace(/\s+/g, "-");
+    const { title } = req.body;
+    const slug = title
+      ? title
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^\w-]/g, "")
+      : undefined;
 
     const content = await Content.findOne({ slug });
     if (content) {
       return next(new ApiError("Content already exists", 400));
     }
 
-    const newContent = await Content.create({ name, slug });
+    const newContent = await Content.create({ title, slug });
     res.status(201).json({
       status: "success",
       message: "Content created successfully",
@@ -89,11 +95,18 @@ const createContent = async (req, res, next) => {
 const updateContent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
-    const slug = name.toLowerCase().trim().replace(/\s+/g, "-");
+    const { title } = req.body;
+    const slug = title
+      ? title
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^\w-]/g, "")
+      : undefined;
+
     const content = await Content.findByIdAndUpdate(
       id,
-      { name, slug },
+      { title, slug },
       { new: true },
     );
 
