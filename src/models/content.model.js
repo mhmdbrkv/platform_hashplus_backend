@@ -139,6 +139,7 @@ contentSchema.pre("save", async function () {
 const moduleSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
+    description: { type: String, required: true },
     order: { type: Number, default: 0 }, // ✅ Explicit ordering field
   },
   { discriminatorKey: "moduleType", _id: true },
@@ -210,32 +211,36 @@ const bootcampSchema = new mongoose.Schema(
     startDate: Date,
     endDate: Date,
 
-    schedule: {
-      days: {
-        type: [
+    modules: [
+      {
+        title: { type: String, required: true },
+
+        description: { type: String, required: true },
+
+        liveSession: {
+          public_id: { type: String, default: "" },
+          url: { type: String, default: "" },
+          _id: false,
+        },
+
+        video: {
+          public_id: { type: String, default: "" },
+          url: { type: String, default: "" },
+          _id: false,
+        },
+
+        timeStart: String, // "09:00"
+        timeEnd: String, // "17:00"
+        timezone: { type: String, default: "Asia/Riyadh" },
+
+        projects: [
           {
-            type: String,
-            enum: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            title: String,
+            description: String,
+            githubUrl: String,
+            liveUrl: String,
           },
         ],
-        // ✅ Validate at least one day is set
-        validate: {
-          validator: (days) => days.length > 0,
-          message: "Schedule must include at least one day",
-        },
-      },
-      timeStart: String, // "09:00"
-      timeEnd: String, // "17:00"
-      timezone: { type: String, default: "Asia/Riyadh" },
-      _id: false,
-    },
-
-    projects: [
-      {
-        title: String,
-        description: String,
-        githubUrl: String,
-        liveUrl: String,
       },
     ],
 
