@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 
+// ─────────────────────────────────────────────
+// Shared options
+// ─────────────────────────────────────────────
 const contentOptions = {
   discriminatorKey: "contentType",
   timestamps: true,
@@ -7,6 +10,9 @@ const contentOptions = {
   toObject: { virtuals: true },
 };
 
+// ─────────────────────────────────────────────
+// Base Content Schema
+// ─────────────────────────────────────────────
 const contentSchema = new mongoose.Schema(
   {
     title: {
@@ -29,28 +35,20 @@ const contentSchema = new mongoose.Schema(
       required: [true, "Content instructor required"],
     },
 
-    price: {
-      amount: {
-        type: Number,
-        required: [true, "Price amount required"],
-        min: 0,
-      },
-      currency: { type: String, default: "SAR" },
-      _id: false,
+    description: {
+      type: String,
+      required: [true, "Content description required"],
+      trim: true,
     },
 
-    thumbnail: {
-      public_id: String,
-      url: String,
-      uploadedAt: Date,
-      _id: false,
+    learningOutcomes: {
+      type: [String],
+      required: [true, "Content learning outcomes required"],
     },
 
-    welcomeVideo: {
-      public_id: String,
-      url: String,
-      uploadedAt: Date,
-      _id: false,
+    prerequisites: {
+      type: [String],
+      required: [true, "Content pre-requisites required"],
     },
 
     welcomeMessage: { type: String, trim: true, default: "" },
@@ -67,100 +65,171 @@ const contentSchema = new mongoose.Schema(
 
     materials: { type: [String], default: [] },
 
-    metadata: {
-      description: {
-        type: String,
-        required: [true, "Content description required"],
-        trim: true,
-      },
-
-      learningOutcomes: {
-        type: [String],
-        required: [true, "Content learning outcomes required"],
-      },
-
-      prerequisites: {
-        type: [String],
-        required: [true, "Content pre requisites required"],
-      },
-
-      modulesCount: {
+    price: {
+      amount: {
         type: Number,
-        default: 0,
-      },
-
-      duration: {
-        type: Number,
-        default: 0,
-      },
-
-      totalStudentsEnrolled: {
-        type: Number,
-        default: 0,
-      },
-
-      ratingsCount: {
-        type: Number,
-        default: 0,
-      },
-
-      avgRatings: {
-        type: Number,
-        default: 0,
+        required: [true, "Price amount required"],
         min: 0,
-        max: 5,
       },
+      currency: { type: String, default: "SAR" },
+      _id: false,
+    },
+
+    thumbnail: {
+      public_id: { type: String, default: "" },
+      url: { type: String, default: "" },
+      uploadedAt: Date,
+      _id: false,
+    },
+
+    welcomeVideo: {
+      public_id: { type: String, default: "" },
+      url: { type: String, default: "" },
+      uploadedAt: Date,
+      _id: false,
+    },
+
+    // ✅ Denormalized metadata — updated explicitly via service layer or middleware
+    metadata: {
+      modulesCount: { type: Number, default: 0 },
+      duration: { type: Number, default: 0 },
+      totalStudentsEnrolled: { type: Number, default: 0 },
+      ratingsCount: { type: Number, default: 0 },
+      avgRatings: { type: Number, default: 0, min: 0, max: 5 },
     },
   },
   contentOptions,
 );
 
-// Virtual property for getting the reviews of the course with the response
+// ─────────────────────────────────────────────
+// Virtuals
+// ─────────────────────────────────────────────
 contentSchema.virtual("reviews", {
   ref: "Review",
   foreignField: "content",
   localField: "_id",
 });
 
+// ─────────────────────────────────────────────
+// Slug pre-save — handles duplicates gracefully
+// ─────────────────────────────────────────────
+contentSchema.pre("save", async function () {
+  if (this.isModified("title") || !this.slug) {
+    const base =
+      this.title
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]/g, "") || `content-${Date.now()}`;
+
+    const existing = await Content.findOne({
+      slug: new RegExp(`^${base}(-\\d+)?$`),
+      _id: { $ne: this._id },
+    });
+
+    this.slug = existing ? `${base}-${Date.now()}` : base;
+  }
+});
+
+// ─────────────────────────────────────────────
+// Module subdocument discriminators (Course)
+// ─────────────────────────────────────────────
+
+// Base module schema — discriminatorKey matches the existing "moduleType" field
+const moduleSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    order: { type: Number, default: 0 }, // ✅ Explicit ordering field
+  },
+  { discriminatorKey: "moduleType", _id: true },
+);
+
+const videoModuleSchema = new mongoose.Schema({
+  video: {
+    public_id: { type: String, default: "" },
+    url: { type: String, default: "" },
+    duration: { type: Number, default: 0 },
+    uploadedAt: Date,
+    _id: false,
+  },
+});
+
+const quizModuleSchema = new mongoose.Schema({
+  quiz: [
+    {
+      question: { type: String, required: true },
+      options: { type: [String], required: true },
+      // ✅ answer excluded from API responses by default
+      answer: { type: String, required: true, select: false },
+    },
+  ],
+});
+
+const taskModuleSchema = new mongoose.Schema({
+  task: {
+    url_public_id: { type: String, default: "" },
+    url: { type: String, default: "" },
+    image_public_id: { type: String, default: "" },
+    image: { type: String, default: "" },
+    description: { type: String, default: "" },
+    uploadedAt: Date,
+    _id: false,
+  },
+});
+
+const linkModuleSchema = new mongoose.Schema({
+  link: {
+    public_id: { type: String, default: "" },
+    url: { type: String, default: "" },
+    _id: false,
+  },
+});
+
+// ─────────────────────────────────────────────
+// Course Schema
+// ─────────────────────────────────────────────
 const courseSchema = new mongoose.Schema(
   {
-    modules: [
-      {
-        title: String,
-        lessons: [
-          {
-            title: String,
-            videoUrl: String,
-            duration: Number,
-            isCompleted: { type: Boolean, default: false },
-          },
-        ],
-      },
-    ],
-    totalLessons: Number,
-    totalDuration: Number,
-    isCompleted: { type: Boolean, default: false },
-    completedAt: Date,
+    modules: [moduleSchema],
   },
   { _id: false },
 );
 
+// Register module discriminators on the modules array path
+const modulesArray = courseSchema.path("modules");
+modulesArray.discriminator("video", videoModuleSchema);
+modulesArray.discriminator("quiz", quizModuleSchema);
+modulesArray.discriminator("task", taskModuleSchema);
+modulesArray.discriminator("link", linkModuleSchema);
+
+// ─────────────────────────────────────────────
+// Bootcamp Schema
+// ─────────────────────────────────────────────
 const bootcampSchema = new mongoose.Schema(
   {
     startDate: Date,
     endDate: Date,
+
     schedule: {
-      _id: false,
-      days: [
-        {
-          type: String,
-          enum: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      days: {
+        type: [
+          {
+            type: String,
+            enum: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+          },
+        ],
+        // ✅ Validate at least one day is set
+        validate: {
+          validator: (days) => days.length > 0,
+          message: "Schedule must include at least one day",
         },
-      ],
+      },
       timeStart: String, // "09:00"
       timeEnd: String, // "17:00"
       timezone: { type: String, default: "Asia/Riyadh" },
+      _id: false,
     },
+
     projects: [
       {
         title: String,
@@ -169,28 +238,16 @@ const bootcampSchema = new mongoose.Schema(
         liveUrl: String,
       },
     ],
-    totalProjects: Number,
-    isCompleted: { type: Boolean, default: false },
-    completedAt: Date,
+
+    totalProjects: { type: Number, default: 0 },
   },
   { _id: false },
 );
 
-contentSchema.pre("save", function () {
-  if (this.isModified("title") || !this.slug) {
-    this.slug = this.title
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w-]/g, "");
-  }
-  return;
-});
-
-// Create the parent model
+// ─────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────
 const Content = mongoose.model("Content", contentSchema);
-
-// Create the child models using discriminator
 const Course = Content.discriminator("course", courseSchema);
 const Bootcamp = Content.discriminator("bootcamp", bootcampSchema);
 

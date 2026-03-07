@@ -1,4 +1,4 @@
-import Content from "../models/content.model.js";
+import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 
@@ -72,7 +72,7 @@ const createContent = async (req, res, next) => {
           .toLowerCase()
           .trim()
           .replace(/\s+/g, "-")
-          .replace(/[^\w-]/g, "")
+          .replace(/[^\w-]/g, "") || `content-${Date.now()}`
       : undefined;
 
     const content = await Content.findOne({ slug });
@@ -101,7 +101,7 @@ const updateContent = async (req, res, next) => {
           .toLowerCase()
           .trim()
           .replace(/\s+/g, "-")
-          .replace(/[^\w-]/g, "")
+          .replace(/[^\w-]/g, "") || `content-${Date.now()}`
       : undefined;
 
     const content = await Content.findByIdAndUpdate(

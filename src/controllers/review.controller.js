@@ -1,5 +1,5 @@
 import Review from "../models/review.model.js";
-import Content from "../models/content.model.js";
+import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 import { aggregateRatings } from "../utils/aggregateRatings.js";
