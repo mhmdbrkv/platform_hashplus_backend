@@ -1,9 +1,7 @@
 import IORedis from "ioredis";
-import { REDIS_HOST, REDIS_PORT } from "./env.js";
+import { REDIS_URL } from "./env.js";
 
-const appRedis = new IORedis({
-  host: REDIS_HOST,
-  port: REDIS_PORT,
+const appRedis = new IORedis(REDIS_URL, {
   maxRetriesPerRequest: 5,
   enableReadyCheck: true,
 });
