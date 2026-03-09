@@ -10,6 +10,8 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const REDIS_URL = process.env.REDIS_URL || "";
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || "";
+const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || "";
 
 const JWT_ACCESS_SECRET_KEY = process.env.JWT_ACCESS_SECRET_KEY || "";
 const JWT_ACCESS_EXPIRE_TIME = process.env.JWT_ACCESS_EXPIRE_TIME || "";
@@ -30,6 +32,8 @@ export {
   REDIS_HOST,
   REDIS_PORT,
   REDIS_URL,
+  UPSTASH_REDIS_REST_URL,
+  UPSTASH_REDIS_REST_TOKEN,
   NODE_ENV,
   JWT_ACCESS_SECRET_KEY,
   JWT_ACCESS_EXPIRE_TIME,
