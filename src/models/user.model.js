@@ -61,11 +61,6 @@ const instructorDetailsSchema = new mongoose.Schema(
 const studentDetailsSchema = new mongoose.Schema(
   {
     bio: { type: String, trim: true },
-
-    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
-    courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
-    bootCamps: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
-
     certificates: [
       {
         contentId: { type: mongoose.Schema.Types.ObjectId, ref: "Content" },
