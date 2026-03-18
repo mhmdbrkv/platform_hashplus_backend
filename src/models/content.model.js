@@ -245,8 +245,6 @@ const bootcampSchema = new mongoose.Schema(
     ],
 
     totalProjects: { type: Number, default: 0 },
-
-    usersEnrolled: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { _id: false },
 );
