@@ -113,6 +113,18 @@ const userSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     lastLogin: Date,
 
+    isSubscribed: { type: Boolean, default: false },
+    subscriptionDetails: {
+      subscriptionName: String,
+      subscriptionPrice: Number,
+      subscriptionType: {
+        type: String,
+        enum: ["one_month", "three_months", "one_year"],
+      },
+      subscriptionStartDate: Date,
+      subscriptionEndDate: Date,
+    },
+
     otpCode: String,
     otpEat: Date,
     otpIsVerified: { type: Boolean, default: false },
