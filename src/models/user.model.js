@@ -61,19 +61,11 @@ const instructorDetailsSchema = new mongoose.Schema(
 const studentDetailsSchema = new mongoose.Schema(
   {
     bio: { type: String, trim: true },
-    enrolledContent: [
-      {
-        contentId: { type: mongoose.Schema.Types.ObjectId, ref: "Content" },
-        status: {
-          type: String,
-          enum: ["enrolled", "completed"],
-          default: "enrolled",
-        },
-        enrolledAt: { type: Date, default: Date.now },
-        completedAt: { type: Date },
-      },
-    ],
-    totalEnrolledContent: { type: Number, default: 0 },
+
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
+    courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
+    bootCamps: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
+
     certificates: [
       {
         contentId: { type: mongoose.Schema.Types.ObjectId, ref: "Content" },
@@ -81,7 +73,6 @@ const studentDetailsSchema = new mongoose.Schema(
         issuedAt: { type: Date, default: Date.now },
       },
     ],
-    totalCertificates: { type: Number, default: 0 },
   },
   { _id: false, timestamps: true },
 );

@@ -193,7 +193,7 @@ const courseSchema = new mongoose.Schema(
   {
     modules: [moduleSchema],
   },
-  { _id: false },
+  { _id: false, timestamps: true },
 );
 
 // Register module discriminators on the modules array path
@@ -245,8 +245,10 @@ const bootcampSchema = new mongoose.Schema(
     ],
 
     totalProjects: { type: Number, default: 0 },
+
+    usersSubscribed: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
-  { _id: false },
+  { _id: false, timestamps: true },
 );
 
 // ─────────────────────────────────────────────
