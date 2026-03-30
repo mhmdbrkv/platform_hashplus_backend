@@ -66,21 +66,59 @@ const getContent = async (req, res, next) => {
 
 const createContent = async (req, res, next) => {
   try {
-    const { title } = req.body;
-    const slug = title
-      ? title
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^\w-]/g, "") || `content-${Date.now()}`
-      : undefined;
+    const {
+      contentType,
+      title,
+      category,
+      instructor,
+      description,
+      learningOutcomes,
+      prerequisites,
+      welcomeMessage,
+      congratulationsMessage,
+      level,
+      language,
+      materials,
+      price,
+      thumbnail,
+      welcomeVideo,
+      startDate,
+      endDate,
+      totalProjects,
+    } = req.body;
+
+    if ((!title, !typeof title === "string"))
+      return next(new ApiError("Content title required", 400));
+
+    const slug = `${title}`.trim();
 
     const content = await Content.findOne({ slug });
     if (content) {
       return next(new ApiError("Content already exists", 400));
     }
 
-    const newContent = await Content.create({ title, slug });
+    const newContent = await Content.create({
+      title: `${title}`.trim(),
+      slug,
+      contentType,
+      category,
+      instructor,
+      description,
+      learningOutcomes,
+      prerequisites,
+      welcomeMessage,
+      congratulationsMessage,
+      level,
+      language,
+      materials,
+      price,
+      thumbnail: null,
+      welcomeVideo: null,
+      startDate: contentType === "bootcamp" ? new Date(startDate) : null,
+      endDate: contentType === "bootcamp" ? new Date(endDate) : null,
+      totalProjects: contentType === "bootcamp" ? totalProjects : null,
+    });
+
     res.status(201).json({
       status: "success",
       message: "Content created successfully",

@@ -3,6 +3,7 @@ import profileRoutes from "./profile.route.js";
 import categoryRoutes from "./category.route.js";
 import contentRoutes from "./content.route.js";
 import reviewRoutes from "./review.route.js";
+import moduleRoutes from "./module.route.js";
 
 export default (app) => {
   app.use("/api/v1/auth", authRoutes);
@@ -10,4 +11,5 @@ export default (app) => {
   app.use("/api/v1/categories", categoryRoutes);
   app.use("/api/v1/contents", contentRoutes);
   app.use("/api/v1/reviews", reviewRoutes);
+  app.use("/api/v1/modules", moduleRoutes);
 };

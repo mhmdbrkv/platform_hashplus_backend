@@ -1,4 +1,5 @@
-import Review from "../models/review.model.js";
+import { mongoose } from "mongoose";
+import { Review } from "../models/review.model.js";
 import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
@@ -63,8 +64,8 @@ const getReview = async (req, res, next) => {
 
 const createReview = async (req, res, next) => {
   try {
-    const { rating, comment, review } = req.body;
-    const newReview = await Review.create({ rating, comment, review });
+    const { rating, review, user, content } = req.body;
+    const newReview = await Review.create({ rating, review, user, content });
 
     //Applying aggregation after creating a review
     aggregateRatings(

@@ -41,4 +41,4 @@ reviewSchema.pre(/^find/, function () {
 
 const Review = mongoose.model("Review", reviewSchema);
 
-export default Review;
+export { Review };
