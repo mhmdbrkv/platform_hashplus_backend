@@ -37,16 +37,7 @@ const getReviews = async (req, res, next) => {
 const getReview = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const review = await Review.findById(id)
-      .populate({
-        path: "user",
-        select: "name profileImage",
-      })
-      .populate({
-        path: "content",
-        select: "title",
-      })
-      .lean();
+    const review = await Review.findById(id).lean();
 
     if (!review) {
       return next(new ApiError("Review not found", 404));
