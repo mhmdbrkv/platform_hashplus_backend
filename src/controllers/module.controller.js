@@ -49,8 +49,7 @@ const addCourseModule = async (req, res, next) => {
       linkData,
     } = req.body;
 
-    // save to db
-    const content = await Content.findById(contentId);
+    const content = await Course.findById(contentId);
 
     if (!content) {
       return next(new ApiError(`No content found with id: ${contentId}`, 400));
@@ -276,16 +275,226 @@ const removeOneCourseModule = async (req, res, next) => {
 
 //------------------------ BOOTCAMP ------------------------//
 
-// const addBootcampModule = async (req, res, next) => {};
-// const updateOneBootcampModule = async (req, res, next) => {};
-// const removeOneBootcampModule = async (req, res, next) => {};
+const addBootcampModule = async (req, res, next) => {
+  try {
+    const {
+      contentId,
+      title,
+      description,
+      liveSession,
+      video,
+      timeStart,
+      timeEnd,
+      timezone,
+      projects,
+    } = req.body || {};
+
+    if (!mongoose.isValidObjectId(contentId)) {
+      return next(
+        new ApiError("contentId is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    const moduleId = new mongoose.Types.ObjectId(contentId);
+
+    const content = await Bootcamp.findById(moduleId);
+
+    if (!content) {
+      return next(new ApiError(`No content found with id: ${contentId}`, 400));
+    }
+
+    if (video && (!video.url || !video.key || !video.duration || !video.size)) {
+      return next(
+        new ApiError(
+          "video url and key and duration and size is required!",
+          400,
+        ),
+      );
+    }
+
+    if (liveSession && !liveSession.url) {
+      return next(new ApiError("liveSession url is required!", 400));
+    }
+
+    if (
+      projects &&
+      (!projects.title ||
+        !projects.description ||
+        !projects.githubUrl ||
+        !projects.liveDemoUrl)
+    ) {
+      return next(
+        new ApiError(
+          "projects title and description and githubUrl and liveDemoUrl is required!",
+          400,
+        ),
+      );
+    }
+
+    content.modules.push({
+      title,
+      description,
+      liveSession,
+      video,
+      timeStart,
+      timeEnd,
+      timezone,
+      projects,
+    });
+
+    await content.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Module Added To DB Successfuly!",
+      content,
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error addind bootcamp module ", 400));
+  }
+};
+
+const updateOneBootcampModule = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return next(
+        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    const moduleId = new mongoose.Types.ObjectId(id);
+    const {
+      title,
+      description,
+      liveSession,
+      video,
+      timeStart,
+      timeEnd,
+      timezone,
+      projects,
+    } = req.body || {};
+
+    // build an update object targeting the matched module
+    const update = {
+      $set: {},
+    };
+
+    if (title !== undefined) update.$set["modules.$.title"] = title;
+    if (description !== undefined)
+      update.$set["modules.$.description"] = description;
+    if (timeStart !== undefined) update.$set["modules.$.timeStart"] = timeStart;
+    if (timeEnd !== undefined) update.$set["modules.$.timeEnd"] = timeEnd;
+    if (timezone !== undefined) update.$set["modules.$.timezone"] = timezone;
+
+    if (
+      liveSession !== undefined &&
+      liveSession.url &&
+      liveSession.url !== ""
+    ) {
+      update.$set["modules.$.liveSession"] = liveSession;
+    }
+
+    if (
+      video !== undefined &&
+      video.url &&
+      video.url !== "" &&
+      video.key &&
+      video.key !== "" &&
+      video.duration &&
+      video.duration !== "" &&
+      video.size &&
+      video.size !== ""
+    ) {
+      update.$set["modules.$.video"] = video;
+    }
+
+    if (
+      projects !== undefined &&
+      projects.title &&
+      projects.title !== "" &&
+      projects.description &&
+      projects.description !== "" &&
+      projects.githubUrl &&
+      projects.githubUrl !== "" &&
+      projects.liveDemoUrl &&
+      projects.liveDemoUrl !== ""
+    ) {
+      update.$set["modules.$.projects"] = projects;
+    }
+
+    if (Object.keys(update.$set).length === 0) {
+      return next(new ApiError("No updatable fields provided.", 400));
+    }
+
+    const content = await Bootcamp.findOneAndUpdate(
+      { "modules._id": moduleId },
+      update,
+      {
+        returnDocument: "after",
+        projection: { "modules.$": 1 },
+      },
+    );
+
+    if (!content) {
+      return next(new ApiError("No Module Found", 404));
+    }
+
+    const module = content?.modules?.[0];
+
+    res.status(200).json({
+      status: "success",
+      message: "Module Updated Successfuly!",
+      module,
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error updating module.", 400));
+  }
+};
+
+const removeOneBootcampModule = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return next(
+        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    const moduleId = new mongoose.Types.ObjectId(id);
+
+    // If video, remove from r2
+
+    const content = await Bootcamp.findOneAndUpdate(
+      { "modules._id": moduleId },
+      { $pull: { modules: { _id: moduleId } } },
+      { returnDocument: "after", projection: { "modules.$": 1 } },
+    );
+
+    if (!content) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Module Removed Successfuly!",
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error fetching module.", 400));
+  }
+};
 
 export {
   getOneModule,
   addCourseModule,
   updateOneCourseModule,
   removeOneCourseModule,
-  // addBootcampModule,
-  // updateOneBootcampModule,
-  // removeOneBootcampModule,
+  addBootcampModule,
+  updateOneBootcampModule,
+  removeOneBootcampModule,
 };

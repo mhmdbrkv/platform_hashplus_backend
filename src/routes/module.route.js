@@ -5,9 +5,9 @@ import {
   addCourseModule,
   updateOneCourseModule,
   removeOneCourseModule,
-  // addBootcampModule,
-  // updateOneBootcampModule,
-  // removeOneBootcampModule,
+  addBootcampModule,
+  updateOneBootcampModule,
+  removeOneBootcampModule,
 } from "../controllers/module.controller.js";
 
 import { guard } from "../middleware/auth.middleware.js";
@@ -23,8 +23,8 @@ router.patch("/:id/course", updateOneCourseModule);
 router.delete("/:id/course", removeOneCourseModule);
 
 // Bootcamp Modules Routes
-// router.post("/bootcamp", addBootcampModule);
-// router.patch("/:id/bootcamp", updateOneBootcampModule);
-// router.delete("/:id/bootcamp", removeOneBootcampModule);
+router.post("/bootcamp", addBootcampModule);
+router.patch("/:id/bootcamp", updateOneBootcampModule);
+router.delete("/:id/bootcamp", removeOneBootcampModule);
 
 export default router;

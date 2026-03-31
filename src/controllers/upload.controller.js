@@ -81,3 +81,5 @@ export const abortUpload = async (req, res, next) => {
     .status(200)
     .json({ status: "success", message: "uploading aborted successfuly" });
 };
+
+// export const removeUpload = async (req, res, next) =>{}

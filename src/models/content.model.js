@@ -210,31 +210,32 @@ const bootcampSchema = new mongoose.Schema(
     modules: [
       {
         title: { type: String, required: true },
-
         description: { type: String, required: true },
 
+        timeStart: String, // "09:00"
+        timeEnd: String, // "17:00"
+        timezone: { type: String, default: "Asia/Riyadh" },
+
         liveSession: {
-          public_id: { type: String, default: "" },
           url: { type: String, default: "" },
           _id: false,
         },
 
         video: {
-          public_id: { type: String, default: "" },
+          key: { type: String, default: "" },
           url: { type: String, default: "" },
+          duration: { type: Number, default: 0 },
+          size: { type: Number, default: 0 },
+          uploadedAt: Date,
           _id: false,
         },
-
-        timeStart: String, // "09:00"
-        timeEnd: String, // "17:00"
-        timezone: { type: String, default: "Asia/Riyadh" },
 
         projects: [
           {
             title: String,
             description: String,
             githubUrl: String,
-            liveUrl: String,
+            liveDemoUrl: String,
           },
         ],
       },
