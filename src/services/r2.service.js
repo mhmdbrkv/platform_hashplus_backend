@@ -3,6 +3,7 @@ import {
   UploadPartCommand,
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "../config/r2.js";
@@ -65,13 +66,7 @@ export const completeMultipartUpload = async (key, uploadId, parts) => {
 };
 
 // Abort Multipart Uploads
-export const abortMultipartUpload = async (req, res, next) => {
-  const { key, uploadId } = req.body;
-  //   const video = await db.videos.findOne({
-  //     key,
-  //     uploadId,
-  //   });
-
+export const abortMultipartUpload = async (key, uploadId) => {
   await s3Client.send(
     new AbortMultipartUploadCommand({
       Bucket: R2_BUCKET,
@@ -80,8 +75,19 @@ export const abortMultipartUpload = async (req, res, next) => {
     }),
   );
 
-  // await db.videos.update(video.id, { status: "aborted" });
-  res.json({ status: "success", message: "uploading aborted successfuly" });
+  return true;
+};
+
+// Delete Upload
+export const deleteUpload = async (key) => {
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+    }),
+  );
+
+  return true;
 };
 
 // Cleanup job — runs every 24h

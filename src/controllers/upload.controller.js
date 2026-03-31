@@ -3,12 +3,16 @@ import {
   startMultipartUpload,
   getMultipartPresignedUrls,
   completeMultipartUpload,
+  abortMultipartUpload,
+  deleteUpload,
 } from "../services/r2.service.js";
-import { AbortMultipartUploadCommand } from "@aws-sdk/client-s3";
 
+// Start Multipart Upload, Generate Pre-Signed URLs
 export const startUpload = async (req, res, next) => {
   try {
     const { fileName, fileType, userId, partsCount } = req.body;
+
+    partsCount = Number(partsCount);
 
     if (!fileName || !fileType || !userId || !partsCount) {
       return next(
@@ -47,6 +51,7 @@ export const startUpload = async (req, res, next) => {
   }
 };
 
+// Complete Multipart Upload
 export const completeUpload = async (req, res, next) => {
   try {
     const { key, uploadId, parts } = req.body;
@@ -68,18 +73,37 @@ export const completeUpload = async (req, res, next) => {
 export const abortUpload = async (req, res, next) => {
   const { key, uploadId } = req.body;
 
-  await s3Client.send(
-    new AbortMultipartUploadCommand({
-      Bucket: R2_BUCKET,
-      Key: key,
-      UploadId: uploadId,
-    }),
-  );
+  const data = await abortMultipartUpload(key, uploadId);
+
+  if (!data) {
+    return next(new ApiError("Error aborting upload.", 400));
+  }
 
   // await db.videos.update(video.id, { status: "aborted" });
-  res
-    .status(200)
-    .json({ status: "success", message: "uploading aborted successfuly" });
+
+  res.status(200).json({
+    status: "success",
+    message: "Upload Aborted Successfuly!",
+  });
 };
 
-// export const removeUpload = async (req, res, next) =>{}
+// Delete Upload
+export const removeUpload = async (req, res, next) => {
+  try {
+    const { key } = req.body;
+
+    const data = await deleteUpload(key);
+
+    if (!data) {
+      return next(new ApiError("Error deleting upload.", 400));
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Upload Removed Successfuly!",
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error removing upload.", 400));
+  }
+};
