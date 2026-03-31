@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
 
 // ─────────────────────────────────────────────
 // Shared options
@@ -115,12 +116,7 @@ contentSchema.virtual("reviews", {
 // ─────────────────────────────────────────────
 contentSchema.pre("save", async function () {
   if (this.isModified("title") || !this.slug) {
-    const base =
-      this.title
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w-]/g, "") || `content-${Date.now()}`;
+    const base = slugify(this.title);
 
     const existing = await Content.findOne({
       slug: new RegExp(`^${base}(-\\d+)?$`),
@@ -147,8 +143,10 @@ const moduleSchema = new mongoose.Schema(
 
 const videoModuleSchema = new mongoose.Schema({
   video: {
-    public_id: { type: String, default: "" },
     url: { type: String, default: "" },
+    key: { type: String, default: "" },
+    uploadId: { type: String, default: "" },
+    size: { type: Number, default: 0 },
     duration: { type: Number, default: 0 },
     uploadedAt: Date,
     _id: false,
@@ -168,10 +166,8 @@ const quizModuleSchema = new mongoose.Schema({
 
 const taskModuleSchema = new mongoose.Schema({
   task: {
-    url_public_id: { type: String, default: "" },
     url: { type: String, default: "" },
-    image_public_id: { type: String, default: "" },
-    image: { type: String, default: "" },
+    imageUrl: { type: String, default: "" },
     description: { type: String, default: "" },
     uploadedAt: Date,
     _id: false,
@@ -180,8 +176,8 @@ const taskModuleSchema = new mongoose.Schema({
 
 const linkModuleSchema = new mongoose.Schema({
   link: {
-    public_id: { type: String, default: "" },
     url: { type: String, default: "" },
+    description: { type: String, default: "" },
     _id: false,
   },
 });

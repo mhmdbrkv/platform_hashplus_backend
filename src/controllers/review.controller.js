@@ -79,10 +79,10 @@ const createReview = async (req, res, next) => {
 const updateReview = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { rating, comment, review } = req.body;
+    const { rating, review } = req.body;
     const updatedReview = await Review.findByIdAndUpdate(
       id,
-      { rating, comment, review },
+      { rating, review },
       { new: true },
     );
     if (!updatedReview) {

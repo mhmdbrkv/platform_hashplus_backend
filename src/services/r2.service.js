@@ -23,7 +23,7 @@ export const startMultipartUpload = async (fileName, fileType, userId) => {
 
   return {
     uploadId: response.UploadId,
-    key: command.input.Key,
+    key,
   };
 };
 
@@ -65,18 +65,18 @@ export const completeMultipartUpload = async (key, uploadId, parts) => {
 };
 
 // Abort Multipart Uploads
-export const abortUpload = async (req, res, next) => {
-  const { videoId } = req.body;
-  const video = await db.videos.findOne({
-    id: videoId,
-    uploadedBy: req.user.id,
-  });
+export const abortMultipartUpload = async (req, res, next) => {
+  const { key, uploadId } = req.body;
+  //   const video = await db.videos.findOne({
+  //     key,
+  //     uploadId,
+  //   });
 
   await s3Client.send(
     new AbortMultipartUploadCommand({
       Bucket: R2_BUCKET,
-      Key: video.key,
-      UploadId: video.uploadId,
+      Key: key,
+      UploadId: uploadId,
     }),
   );
 
@@ -85,7 +85,7 @@ export const abortUpload = async (req, res, next) => {
 };
 
 // Cleanup job — runs every 24h
-export async function abortStaleMultipartUploads() {
+export const abortStaleMultipartUploads = async () => {
   const stale = await db.videos.findAll({
     status: "pending",
     createdAt: { $lt: new Date(Date.now() - 48 * 60 * 60 * 1000) }, // older than 48h
@@ -102,4 +102,4 @@ export async function abortStaleMultipartUploads() {
     );
     await db.videos.update(video.id, { status: "expired" });
   }
-}
+};
