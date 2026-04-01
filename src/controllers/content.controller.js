@@ -1,3 +1,4 @@
+import slugify from "slugify";
 import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
@@ -134,18 +135,12 @@ const updateContent = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title } = req.body;
-    const slug = title
-      ? title
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^\w-]/g, "") || `content-${Date.now()}`
-      : undefined;
+    const slug = title ? slugify(title) : undefined;
 
     const content = await Content.findByIdAndUpdate(
       id,
       { title, slug },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     if (!content) {
@@ -166,11 +161,16 @@ const updateContent = async (req, res, next) => {
 const deleteContent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const content = await Content.findByIdAndDelete(id);
-    res.status(200).json({
+
+    const content = await Content.findById(id);
+    if (!content) {
+      return next(new ApiError("Content not found", 404));
+    }
+
+    await Content.findByIdAndDelete(id);
+    res.status(204).json({
       status: "success",
       message: "Content deleted successfully",
-      data: content,
     });
   } catch (error) {
     console.log(error);

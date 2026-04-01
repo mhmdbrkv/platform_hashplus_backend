@@ -22,6 +22,6 @@ router.get("/:id", getContent);
 router.use(guard);
 
 router.post("/", createContent);
-router.route("/:id").put(updateContent).delete(deleteContent);
+router.route("/:id").patch(updateContent).delete(deleteContent);
 
 export default router;

@@ -243,7 +243,7 @@ const bootcampSchema = new mongoose.Schema(
 
     totalProjects: { type: Number, default: 0 },
   },
-  { _id: false, timestamps: true },
+  { timestamps: true },
 );
 
 // ─────────────────────────────────────────────

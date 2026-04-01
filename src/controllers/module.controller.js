@@ -21,6 +21,10 @@ const getOneModule = async (req, res, next) => {
       { "modules.$": 1 },
     );
 
+    if (!content) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
     const module = content?.modules[0];
 
     res.status(200).json({
@@ -47,21 +51,35 @@ const addCourseModule = async (req, res, next) => {
       quizData,
       taskData,
       linkData,
-    } = req.body;
+    } = req.body || {};
+
+    if (!mongoose.isValidObjectId(contentId)) {
+      return next(
+        new ApiError("contentId is not a valid mongoose ObjectId!", 400),
+      );
+    }
 
     const content = await Course.findById(contentId);
 
     if (!content) {
-      return next(new ApiError(`No content found with id: ${contentId}`, 400));
+      return next(new ApiError(`No content found with id: ${contentId}`, 404));
+    }
+
+    if (!title) {
+      return next(new ApiError("title is required!", 400));
     }
 
     let dataObj = {};
 
     switch (moduleType) {
       case "video":
+        if (!videoData)
+          return next(
+            new ApiError("videoData is required for video modules.", 400),
+          );
         dataObj = {
           video: {
-            url: videoData.videoUrl,
+            url: videoData.url,
             size: videoData.size,
             duration: videoData.duration,
             key: videoData.key,
@@ -71,17 +89,23 @@ const addCourseModule = async (req, res, next) => {
         };
         break;
       case "quiz":
+        if (!quizData)
+          return next(
+            new ApiError("quizData is required for quiz modules.", 400),
+          );
         dataObj = {
-          quiz: quizData.map((quiz) => {
-            return {
-              question: quiz.question,
-              options: quiz.options,
-              answer: quiz.answer,
-            };
-          }),
+          quiz: quizData.map(({ question, options, answer }) => ({
+            question,
+            options,
+            answer,
+          })),
         };
         break;
       case "task":
+        if (!taskData)
+          return next(
+            new ApiError("taskData is required for task modules.", 400),
+          );
         dataObj = {
           task: {
             url: taskData.url,
@@ -92,6 +116,10 @@ const addCourseModule = async (req, res, next) => {
         };
         break;
       case "link":
+        if (!linkData)
+          return next(
+            new ApiError("linkData is required for link modules.", 400),
+          );
         dataObj = {
           link: {
             url: linkData.url,
@@ -100,22 +128,22 @@ const addCourseModule = async (req, res, next) => {
         };
         break;
       default:
-        break;
+        return next(new ApiError(`Unknown moduleType: ${moduleType}`, 400));
     }
 
     content.modules.push({
       title,
       description,
       moduleType,
-      order: content?.modules?.length + 1 || 0,
+      order: (content.modules.length ?? 0) + 1,
       ...dataObj,
     });
 
     await content.save();
 
-    res.status(200).json({
+    res.status(201).json({
       status: "success",
-      message: "Module Added To DB Successfuly!",
+      message: "Module Added Successfully!",
       content,
     });
   } catch (error) {
@@ -145,90 +173,55 @@ const updateOneCourseModule = async (req, res, next) => {
       linkData,
     } = req.body || {};
 
-    // build an update object targeting the matched module
-    const update = {
-      $set: {},
-    };
+    const content = await Course.findOne({ "modules._id": moduleId });
+    if (!content) return next(new ApiError("No Module Found", 404));
+    const module = content.modules.id(moduleId); // Mongoose subdoc helper
+    if (!module) return next(new ApiError("No Module Found", 404));
 
-    if (title !== undefined) update.$set["modules.$.title"] = title;
-    if (description !== undefined)
-      update.$set["modules.$.description"] = description;
+    if (title !== undefined) module.title = title;
+    if (description !== undefined) module.description = description;
 
-    if (moduleType === "video") {
+    if (moduleType && moduleType === "video") {
       if (!videoData)
         return next(
           new ApiError("videoData is required for video module updates.", 400),
         );
 
-      update.$set["modules.$.video"] = {
-        url: videoData.videoUrl,
-        size: videoData.size,
-        duration: videoData.duration,
-        key: videoData.key,
-        uploadId: videoData.uploadId,
-        uploadedAt: new Date(),
-      };
-    } else if (moduleType === "quiz") {
+      module.video = { ...videoData, uploadedAt: new Date() };
+    } else if (moduleType && moduleType === "quiz") {
       if (!quizData)
         return next(
           new ApiError("quizData is required for quiz module updates.", 400),
         );
 
-      update.$set["modules.$.quiz"] = quizData.map((quiz) => {
-        return {
-          question: quiz.question,
-          options: quiz.options,
-          answer: quiz.answer,
-        };
-      });
-    } else if (moduleType === "task") {
+      module.quiz = quizData.map(({ question, options, answer }) => ({
+        question,
+        options,
+        answer,
+      }));
+    } else if (moduleType && moduleType === "task") {
       if (!taskData)
         return next(
           new ApiError("taskData is required for task module updates.", 400),
         );
 
-      update.$set["modules.$.task"] = {
-        url: taskData.url,
-        imageUrl: taskData.imageUrl,
-        description: taskData.description,
-        uploadedAt: new Date(),
-      };
-    } else if (moduleType === "link") {
+      module.task = { ...taskData, uploadedAt: new Date() };
+    } else if (moduleType && moduleType === "link") {
       if (!linkData) {
         return next(
           new ApiError("linkData is required for link module updates.", 400),
         );
       }
 
-      update.$set["modules.$.link"] = {
-        url: linkData.url,
-        description: linkData.description,
-      };
+      module.link = { ...linkData };
     }
 
-    if (Object.keys(update.$set).length === 0) {
-      return next(new ApiError("No updatable fields provided.", 400));
-    }
-
-    const content = await Course.findOneAndUpdate(
-      { "modules._id": moduleId },
-      update,
-      {
-        returnDocument: "after",
-        projection: { "modules.$": 1 },
-      },
-    );
-
-    if (!content) {
-      return next(new ApiError("No Module Found", 404));
-    }
-
-    const module = content?.modules?.[0];
+    await content.save();
 
     res.status(200).json({
       status: "success",
-      message: "Module Updated Successfuly!",
-      module,
+      message: "Module Updated Successfully!",
+      data: content,
     });
   } catch (error) {
     console.error(error);
@@ -248,28 +241,34 @@ const removeOneCourseModule = async (req, res, next) => {
 
     const moduleId = new mongoose.Types.ObjectId(id);
 
-    // If video, remove from r2
-
-    const content = await Course.findOneAndUpdate(
-      { "modules._id": moduleId },
-      { $pull: { modules: { _id: moduleId } } },
-      { returnDocument: "after", projection: { "modules.$": 1 } },
-    );
+    const content = await Course.findOne({ "modules._id": moduleId });
 
     if (!content) {
       return next(new ApiError("No module found with this id.", 404));
     }
 
-    content.modules.forEach((module, idx) => (module.order = idx + 1));
+    const module = content.modules.id(moduleId);
+
+    if (!module) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
+    // TODO: If video moduleType, delete from R2 storage here
+
+    content.modules.pull(moduleId);
+
+    // Re-order remaining modules after removal
+    content.modules.forEach((mod, idx) => (mod.order = idx + 1));
+
     await content.save();
 
     res.status(200).json({
       status: "success",
-      message: "Module Removed Successfuly!",
+      message: "Module Removed Successfully!",
     });
   } catch (error) {
     console.error(error);
-    next(new ApiError("Error fetching module.", 400));
+    next(new ApiError("Error removing module.", 400));
   }
 };
 
@@ -295,20 +294,19 @@ const addBootcampModule = async (req, res, next) => {
       );
     }
 
-    const moduleId = new mongoose.Types.ObjectId(contentId);
-
-    const content = await Bootcamp.findById(moduleId);
+    const content = await Bootcamp.findById(contentId);
 
     if (!content) {
-      return next(new ApiError(`No content found with id: ${contentId}`, 400));
+      return next(new ApiError(`No content found with id: ${contentId}`, 404));
+    }
+
+    if (!title) {
+      return next(new ApiError("title is required!", 400));
     }
 
     if (video && (!video.url || !video.key || !video.duration || !video.size)) {
       return next(
-        new ApiError(
-          "video url and key and duration and size is required!",
-          400,
-        ),
+        new ApiError("video url, key, duration and size are required!", 400),
       );
     }
 
@@ -318,14 +316,15 @@ const addBootcampModule = async (req, res, next) => {
 
     if (
       projects &&
-      (!projects.title ||
-        !projects.description ||
-        !projects.githubUrl ||
-        !projects.liveDemoUrl)
+      Array.isArray(projects) &&
+      projects.length > 0 &&
+      projects.some(
+        (p) => !p.title || !p.description || !p.githubUrl || !p.liveDemoUrl,
+      )
     ) {
       return next(
         new ApiError(
-          "projects title and description and githubUrl and liveDemoUrl is required!",
+          "projects title, description, githubUrl and liveDemoUrl are required!",
           400,
         ),
       );
@@ -335,7 +334,7 @@ const addBootcampModule = async (req, res, next) => {
       title,
       description,
       liveSession,
-      video,
+      video: video ? { ...video, uploadedAt: new Date() } : undefined,
       timeStart,
       timeEnd,
       timezone,
@@ -344,14 +343,14 @@ const addBootcampModule = async (req, res, next) => {
 
     await content.save();
 
-    res.status(200).json({
+    res.status(201).json({
       status: "success",
-      message: "Module Added To DB Successfuly!",
+      message: "Module Added Successfully!",
       content,
     });
   } catch (error) {
     console.error(error);
-    next(new ApiError("Error addind bootcamp module ", 400));
+    next(new ApiError("Error adding bootcamp module.", 400));
   }
 };
 
@@ -377,77 +376,61 @@ const updateOneBootcampModule = async (req, res, next) => {
       projects,
     } = req.body || {};
 
-    // build an update object targeting the matched module
-    const update = {
-      $set: {},
-    };
+    const content = await Bootcamp.findOne({ "modules._id": moduleId });
+    if (!content) return next(new ApiError("No Module Found", 404));
 
-    if (title !== undefined) update.$set["modules.$.title"] = title;
-    if (description !== undefined)
-      update.$set["modules.$.description"] = description;
-    if (timeStart !== undefined) update.$set["modules.$.timeStart"] = timeStart;
-    if (timeEnd !== undefined) update.$set["modules.$.timeEnd"] = timeEnd;
-    if (timezone !== undefined) update.$set["modules.$.timezone"] = timezone;
+    const module = content.modules.id(moduleId);
+    if (!module) return next(new ApiError("No Module Found", 404));
 
-    if (
-      liveSession !== undefined &&
-      liveSession.url &&
-      liveSession.url !== ""
-    ) {
-      update.$set["modules.$.liveSession"] = liveSession;
+    if (title !== undefined) module.title = title;
+    if (description !== undefined) module.description = description;
+    if (timeStart !== undefined) module.timeStart = timeStart;
+    if (timeEnd !== undefined) module.timeEnd = timeEnd;
+    if (timezone !== undefined) module.timezone = timezone;
+
+    if (liveSession !== undefined) {
+      if (!liveSession.url) {
+        return next(new ApiError("liveSession url is required!", 400));
+      }
+      module.liveSession = {
+        ...(module.liveSession?.toObject?.() ?? {}),
+        ...liveSession,
+      };
     }
 
     if (
       video !== undefined &&
       video.url &&
-      video.url !== "" &&
       video.key &&
-      video.key !== "" &&
       video.duration &&
-      video.duration !== "" &&
-      video.size &&
-      video.size !== ""
+      video.size
     ) {
-      update.$set["modules.$.video"] = video;
+      module.video = { ...video, uploadedAt: new Date() };
     }
 
-    if (
-      projects !== undefined &&
-      projects.title &&
-      projects.title !== "" &&
-      projects.description &&
-      projects.description !== "" &&
-      projects.githubUrl &&
-      projects.githubUrl !== "" &&
-      projects.liveDemoUrl &&
-      projects.liveDemoUrl !== ""
-    ) {
-      update.$set["modules.$.projects"] = projects;
+    if (projects !== undefined) {
+      if (
+        !Array.isArray(projects) ||
+        projects.some(
+          (p) => !p.title || !p.description || !p.githubUrl || !p.liveDemoUrl,
+        )
+      ) {
+        return next(
+          new ApiError(
+            "projects title, description, githubUrl and liveDemoUrl are required!",
+            400,
+          ),
+        );
+      }
+      module.projects = projects;
     }
 
-    if (Object.keys(update.$set).length === 0) {
-      return next(new ApiError("No updatable fields provided.", 400));
-    }
-
-    const content = await Bootcamp.findOneAndUpdate(
-      { "modules._id": moduleId },
-      update,
-      {
-        returnDocument: "after",
-        projection: { "modules.$": 1 },
-      },
-    );
-
-    if (!content) {
-      return next(new ApiError("No Module Found", 404));
-    }
-
-    const module = content?.modules?.[0];
+    await content.save();
 
     res.status(200).json({
       status: "success",
-      message: "Module Updated Successfuly!",
-      module,
+      message: "Module Updated Successfully!",
+      data: content,
     });
   } catch (error) {
     console.error(error);
@@ -467,25 +450,31 @@ const removeOneBootcampModule = async (req, res, next) => {
 
     const moduleId = new mongoose.Types.ObjectId(id);
 
-    // If video, remove from r2
-
-    const content = await Bootcamp.findOneAndUpdate(
-      { "modules._id": moduleId },
-      { $pull: { modules: { _id: moduleId } } },
-      { returnDocument: "after", projection: { "modules.$": 1 } },
-    );
+    const content = await Bootcamp.findOne({ "modules._id": moduleId });
 
     if (!content) {
       return next(new ApiError("No module found with this id.", 404));
     }
 
+    const module = content.modules.id(moduleId);
+
+    if (!module) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
+    // TODO: If video moduleType, delete from R2 storage here
+
+    content.modules.pull(moduleId);
+
+    await content.save();
+
     res.status(200).json({
       status: "success",
-      message: "Module Removed Successfuly!",
+      message: "Module Removed Successfully!",
     });
   } catch (error) {
     console.error(error);
-    next(new ApiError("Error fetching module.", 400));
+    next(new ApiError("Error removing module.", 400));
   }
 };
 

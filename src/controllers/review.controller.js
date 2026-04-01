@@ -1,5 +1,5 @@
 import { mongoose } from "mongoose";
-import { Review } from "../models/review.model.js";
+import Review from "../models/review.model.js";
 import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
@@ -124,10 +124,9 @@ const deleteReview = async (req, res, next) => {
       Content,
     );
 
-    res.status(200).json({
+    res.status(204).json({
       status: "success",
       message: "Review deleted successfully",
-      data: review,
     });
   } catch (error) {
     console.log(error);

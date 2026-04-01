@@ -95,7 +95,11 @@ const userSchema = new mongoose.Schema(
     instructorDetails: { type: instructorDetailsSchema, default: () => ({}) },
     studentDetails: { type: studentDetailsSchema, default: () => ({}) },
 
-    role: { type: String, enum: ["user", "admin"], default: "user" },
+    role: {
+      type: String,
+      enum: ["user", "admin", "instructor"],
+      default: "user",
+    },
     isActive: { type: Boolean, default: true },
     lastLogin: Date,
 
