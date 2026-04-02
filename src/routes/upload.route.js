@@ -7,10 +7,10 @@ import {
   removeUpload,
 } from "../controllers/upload.controller.js";
 
-import { guard } from "../middleware/auth.middleware.js";
+import { guard, allowedTo } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
-router.use(guard);
+router.use(guard, allowedTo("admin", "instructor"));
 
 router.post("/multipart/start", startUpload);
 router.post("/multipart/complete", completeUpload);

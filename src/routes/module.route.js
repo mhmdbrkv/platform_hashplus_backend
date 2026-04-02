@@ -10,12 +10,12 @@ import {
   removeOneBootcampModule,
 } from "../controllers/module.controller.js";
 
-import { guard } from "../middleware/auth.middleware.js";
+import { guard, allowedTo } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
-router.use(guard);
-
 router.get("/:id", getOneModule);
+
+router.use(guard, allowedTo("admin", "instructor"));
 
 // Course Modules Routes
 router.post("/course", addCourseModule);

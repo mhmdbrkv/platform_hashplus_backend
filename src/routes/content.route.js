@@ -8,7 +8,7 @@ import {
   deleteContent,
 } from "../controllers/content.controller.js";
 
-import { guard } from "../middleware/auth.middleware.js";
+import { guard, allowedTo } from "../middleware/auth.middleware.js";
 import reviewRoute from "./review.route.js";
 
 const router = express.Router({ mergeParams: true });
@@ -19,7 +19,7 @@ router.use("/:contentId/reviews", reviewRoute);
 router.get("/", getContents);
 router.get("/:id", getContent);
 
-router.use(guard);
+router.use(guard, allowedTo("admin", "instructor"));
 
 router.post("/", createContent);
 router.route("/:id").patch(updateContent).delete(deleteContent);
