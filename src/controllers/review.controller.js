@@ -44,8 +44,7 @@ const getReview = async (req, res, next) => {
       );
     }
 
-    const reviewId = new mongoose.Types.ObjectId(id);
-    const review = await Review.findById(reviewId).lean();
+    const review = await Review.findById(id).lean();
 
     if (!review) {
       return next(new ApiError("Review not found", 404));
@@ -77,18 +76,15 @@ const createReview = async (req, res, next) => {
       );
     }
 
-    const contentId = new mongoose.Types.ObjectId(content);
-    const userId = new mongoose.Types.ObjectId(user);
-
     const newReview = await Review.create({
       rating,
       review,
-      user: userId,
-      content: contentId,
+      user,
+      content,
     });
 
     //Applying aggregation after creating a review
-    aggregateRatings(contentId, Review, Content);
+    aggregateRatings(content, Review, Content);
 
     res.status(201).json({
       status: "success",
@@ -112,11 +108,8 @@ const updateReview = async (req, res, next) => {
       );
     }
 
-    const reviewId = new mongoose.Types.ObjectId(id);
-    const userId = new mongoose.Types.ObjectId(req.user._id);
-
     const updatedReview = await Review.findOneAndUpdate(
-      { _id: reviewId, user: userId },
+      { _id: id, user: req.user._id },
       { rating, review },
       { returnDocument: "after" },
     );
@@ -126,10 +119,8 @@ const updateReview = async (req, res, next) => {
       );
     }
 
-    const contentId = new mongoose.Types.ObjectId(updatedReview.content);
-
     //Applying aggregation after updating a review
-    aggregateRatings(contentId, Review, Content);
+    aggregateRatings(updatedReview.content, Review, Content);
 
     res.status(200).json({
       status: "success",
@@ -152,22 +143,17 @@ const deleteReview = async (req, res, next) => {
       );
     }
 
-    const reviewId = new mongoose.Types.ObjectId(id);
-    const userId = new mongoose.Types.ObjectId(req.user._id);
-
-    const review = await Review.findOne({ _id: reviewId, user: userId });
+    const review = await Review.findOne({ _id: id, user: req.user._id });
     if (!review) {
       return next(
         new ApiError("Review not found or you are not authorized!", 404),
       );
     }
 
-    const contentId = new mongoose.Types.ObjectId(review.content);
-
-    await Review.deleteOne({ _id: reviewId, user: userId });
+    await Review.deleteOne({ _id: id, user: req.user._id });
 
     //Applying aggregation after deleting a review
-    aggregateRatings(contentId, Review, Content);
+    aggregateRatings(review.content, Review, Content);
 
     res.status(204).json({
       status: "success",

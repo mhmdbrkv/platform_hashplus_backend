@@ -103,7 +103,6 @@ const userSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     lastLogin: Date,
 
-    isSubscribed: { type: Boolean, default: false },
     subscription: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subscription",

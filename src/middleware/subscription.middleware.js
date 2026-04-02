@@ -1,18 +1,35 @@
+import User from "../models/user.model.js";
+import Subscription from "../models/subscription.model.js";
+import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
-import Content from "../models/content.model.js";
 
 export const checkSubscription = async (req, res, next) => {
   try {
-    const user = req.user;
+    const user = await User.findById(req.user._id);
+
     if (!user) {
       return next(new ApiError("User not found", 404));
     }
-    if (!user.isSubscribed) {
-      return next(new ApiError("User is not subscribed", 403));
+
+    if (!user.subscription) {
+      return next(new ApiError("No subscription found", 404));
     }
-    if (user.subscriptionDetails?.subscriptionEndDate < Date.now()) {
-      user.isSubscribed = false;
-      user.subscriptionDetails = undefined;
+
+    if (!user.subscription.isActive) {
+      return next(new ApiError("Subscription is not active", 403));
+    }
+
+    if (
+      new Date(user.subscription.subscriptionDetails.subscriptionEndDate) <
+      new Date()
+    ) {
+      await Subscription.findByIdAndUpdate(user.subscription._id, {
+        $set: {
+          isActive: false,
+        },
+      });
+
+      user.subscription = undefined;
       await user.save();
       return next(new ApiError("Subscription has expired", 403));
     }
