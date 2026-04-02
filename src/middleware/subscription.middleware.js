@@ -23,6 +23,9 @@ export const checkSubscription = async (req, res, next) => {
         },
       });
 
+      req.user.isSubscribed = false;
+      await req.user.save();
+
       return next(new ApiError("Subscription has expired", 403));
     }
     next();

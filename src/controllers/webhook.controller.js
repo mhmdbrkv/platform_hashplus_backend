@@ -24,6 +24,16 @@ const handleGeneralSubscriptionPayment = async (user, payment) => {
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + Number(plan_months));
 
+    const subscription = await Subscription.findOne({
+      user: user._id,
+      type: "general",
+      isActive: true,
+    });
+
+    if (subscription) {
+      throw new Error("User already subscribed to this general subscription");
+    }
+
     await Subscription.create({
       type: "general",
       user: user._id,
@@ -45,6 +55,9 @@ const handleGeneralSubscriptionPayment = async (user, payment) => {
       isActive: true,
     });
 
+    user.isSubscribed = true;
+    await user.save();
+
     return { startDate, endDate };
   } catch (err) {
     console.error("Error handling general subscription payment:", err);
@@ -65,6 +78,17 @@ const handleBootcampSubscriptionPayment = async (user, payment) => {
       throw new Error("Bootcamp not found");
     }
 
+    const subscription = await Subscription.findOne({
+      user: user._id,
+      type: "bootcamp",
+      bootcamp: bootcampId,
+      isActive: true,
+    });
+
+    if (subscription) {
+      throw new Error("User already subscribed to this bootcamp");
+    }
+
     await Subscription.create({
       type: "bootcamp",
       user: user._id,
@@ -79,6 +103,9 @@ const handleBootcampSubscriptionPayment = async (user, payment) => {
       },
       isActive: true,
     });
+
+    user.bootcamps.push(bootcampId);
+    await user.save();
 
     return { bootcamp };
   } catch (err) {

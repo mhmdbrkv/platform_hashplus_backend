@@ -103,6 +103,9 @@ const userSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     lastLogin: Date,
 
+    isSubscribed: { type: Boolean, default: false },
+    bootcamps: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
+
     otpCode: String,
     otpEat: Date,
     otpIsVerified: { type: Boolean, default: false },
