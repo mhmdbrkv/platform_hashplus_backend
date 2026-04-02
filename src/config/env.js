@@ -30,6 +30,9 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || "";
 const R2_ENDPOINT = process.env.R2_ENDPOINT || "";
 const R2_BUCKET = process.env.R2_BUCKET || "";
 
+const MOYASAR_SECRET_KEY = process.env.MOYASAR_SECRET_KEY || "";
+const MOYASAR_WEBHOOK_SECRET = process.env.MOYASAR_WEBHOOK_SECRET || "";
+
 export {
   PORT,
   CLIENT_URL,
@@ -49,9 +52,10 @@ export {
   EMAIL_USER,
   EMAIL_PASSWORD,
   GOOGLE_CLIENT_ID,
-
   R2_ACCESS_KEY_ID,
   R2_SECRET_ACCESS_KEY,
   R2_ENDPOINT,
   R2_BUCKET,
+  MOYASAR_SECRET_KEY,
+  MOYASAR_WEBHOOK_SECRET,
 };

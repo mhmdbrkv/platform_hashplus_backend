@@ -2,9 +2,20 @@ import mongoose from "mongoose";
 
 const subscriptionSchema = new mongoose.Schema(
   {
+    type: {
+      type: String,
+      enum: ["general", "bootcamp"],
+      required: true,
+    },
+
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     subscriptionDetails: {
       subscriptionName: String,
-      subscriptionAmount: Number,
+      subscriptionDescription: String,
       subscriptionType: {
         type: String,
         enum: ["one_month", "three_months", "one_year"],
@@ -12,6 +23,11 @@ const subscriptionSchema = new mongoose.Schema(
       subscriptionStartDate: Date,
       subscriptionEndDate: Date,
       _id: false,
+    },
+
+    bootcamp: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Bootcamp",
     },
 
     paymentDetails: {

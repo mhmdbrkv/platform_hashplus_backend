@@ -7,8 +7,16 @@ import { ApiError } from "./utils/apiError.js";
 import errorMiddleware from "./middleware/error.middleware.js";
 import mountRoutes from "./routes/index.js";
 import { CLIENT_URL, NODE_ENV } from "./config/env.js";
+import { moyasarWebhook } from "./controllers/webhook.controller.js";
 
 const app = express();
+
+// Webhook route
+app.post(
+  "/webhook/moyasar",
+  express.raw({ type: "application/json" }),
+  moyasarWebhook,
+);
 
 app.set("trust proxy", 1);
 
