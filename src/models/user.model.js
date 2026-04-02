@@ -104,15 +104,9 @@ const userSchema = new mongoose.Schema(
     lastLogin: Date,
 
     isSubscribed: { type: Boolean, default: false },
-    subscriptionDetails: {
-      subscriptionName: String,
-      subscriptionPrice: Number,
-      subscriptionType: {
-        type: String,
-        enum: ["one_month", "three_months", "one_year"],
-      },
-      subscriptionStartDate: Date,
-      subscriptionEndDate: Date,
+    subscription: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subscription",
     },
 
     otpCode: String,
@@ -138,6 +132,18 @@ userSchema.pre("save", async function () {
   try {
     if (!this.password) return;
     this.password = await bcrypt.hash(this.password, 10);
+  } catch (error) {
+    throw error;
+  }
+});
+
+// mongoose query middleware for populating the `subscription` field
+userSchema.pre(/^find/, function () {
+  try {
+    this.populate({
+      path: "subscription",
+      select: "subscriptionDetails paymentDetails isActive",
+    });
   } catch (error) {
     throw error;
   }

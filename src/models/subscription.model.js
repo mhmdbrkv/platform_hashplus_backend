@@ -2,53 +2,29 @@ import mongoose from "mongoose";
 
 const subscriptionSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "User required"],
-    },
-
-    content: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Content",
-      required: [true, "Content required"],
-    },
-
-    type: {
-      type: String,
-      enum: ["course", "bootcamp"],
-      required: [true, "Type required"],
-    },
-
-    status: {
-      type: String,
-      enum: ["active", "inactive"],
-      default: "active",
-    },
-
-    paymentData: {
-      paymentId: {
+    subscriptionDetails: {
+      subscriptionName: String,
+      subscriptionAmount: Number,
+      subscriptionType: {
         type: String,
-        required: [true, "Payment ID required"],
+        enum: ["one_month", "three_months", "one_year"],
       },
-
-      amount: {
-        type: Number,
-        required: [true, "Amount required"],
-      },
-
-      currency: {
-        type: String,
-        required: [true, "Currency required"],
-      },
-
-      paymentDate: {
-        type: Date,
-        default: Date.now,
-      },
-
+      subscriptionStartDate: Date,
+      subscriptionEndDate: Date,
       _id: false,
     },
+
+    paymentDetails: {
+      paymentId: String,
+      paymentStatus: String,
+      paymentDate: Date,
+      paymentMethod: String,
+      paymentAmount: Number,
+      paymentCurrency: String,
+      _id: false,
+    },
+
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true },
 );
