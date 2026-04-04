@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { ApiError } from "../utils/apiError.js";
 import User from "../models/user.model.js";
-import sendEmail from "../utils/sendEmail.js";
+import { sendEmail } from "../utils/sendEmail.js";
 import { verify } from "../utils/googleAuth.js";
 
 import {

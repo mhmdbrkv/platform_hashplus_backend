@@ -3,7 +3,7 @@ import User from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { sanitizedUser } from "../utils/dataSanitizer.js";
 import { generateAccessToken } from "../utils/jwtToken.js";
-import sendEmail from "../utils/sendEmail.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 // Get Logged In User Profile
 const getMyProfile = async (req, res, next) => {

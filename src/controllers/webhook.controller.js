@@ -1,4 +1,4 @@
-import sendEmail from "../utils/sendEmail.js";
+import { sendEmail } from "../utils/sendEmail.js";
 import User from "../models/user.model.js";
 import { MOYASAR_WEBHOOK_SECRET, EMAIL_USER } from "../config/env.js";
 import crypto from "crypto";
