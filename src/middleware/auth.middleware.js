@@ -1,7 +1,9 @@
 import JWT from "jsonwebtoken";
 import User from "../models/user.model.js";
+import Subscription from "../models/subscription.model.js";
 import { JWT_ACCESS_SECRET_KEY } from "../config/env.js";
 import { ApiError } from "../utils/apiError.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 const guard = async (req, res, next) => {
   // 1) Check if token exists in request
@@ -72,14 +74,46 @@ const guard = async (req, res, next) => {
       }
     }
 
-    // 5) Attach the user to the request object for future middleware or routes
-    // lastLogin
+    // 5) Update lastLogin
     loggedUser.lastLogin = Date.now();
+
+    // 6) Check if user has active subscription
+    if (loggedUser.isSubscribed) {
+      const subscription = await Subscription.findOne({
+        user: loggedUser._id,
+        type: "general",
+        isActive: true,
+      });
+
+      if (!subscription) {
+        loggedUser.isSubscribed = false;
+      } else if (
+        subscription.subscriptionDetails.subscriptionEndDate < new Date()
+      ) {
+        subscription.isActive = false;
+        loggedUser.isSubscribed = false;
+        await subscription.save();
+
+        // Email notification
+        const options = {
+          email: loggedUser.email,
+          subject: `بخصوص اشتراكك في هاش بلس`,
+          message: `مرحبا ${loggedUser.name},\n\nنود إعلامك بأن اشتراكك في هاش بلس قد انتهى. لمتابعة رحلة التعلم، يرجى تجديد اشتراكك.\n\nشكراً لاستخدامك هاش بلس!\n\nفريق هاش بلس`,
+        };
+
+        // send plan expiration email to newUser
+        sendEmail(options).catch((err) => {
+          console.error("Error sending plan expiration email:", err);
+        });
+      }
+    }
+
     await loggedUser.save();
 
+    // 7) Attach the user to the request object for future middleware or routes
     req.user = loggedUser;
 
-    // 6) Continue to the next middleware or route handler
+    // 8) Continue to the next middleware or route handler
     next();
   } catch (error) {
     console.error("Token verification error:", error);

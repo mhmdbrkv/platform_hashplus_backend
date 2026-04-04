@@ -8,6 +8,7 @@ import errorMiddleware from "./middleware/error.middleware.js";
 import mountRoutes from "./routes/index.js";
 import { CLIENT_URL, NODE_ENV } from "./config/env.js";
 import { moyasarWebhook } from "./controllers/webhook.controller.js";
+import { scheduleDailySubscriptionReset } from "./cron/resetCron.js";
 
 const app = express();
 
@@ -19,6 +20,9 @@ app.post(
 );
 
 app.set("trust proxy", 1);
+
+// Schedule daily subscription reset
+scheduleDailySubscriptionReset();
 
 // Configure CORS with specific options
 const corsOptions = {

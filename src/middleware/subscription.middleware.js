@@ -10,13 +10,12 @@ export const checkSubscription = async (req, res, next) => {
     });
 
     if (!subscription) {
+      req.user.isSubscribed = false;
+      await req.user.save();
       return next(new ApiError("No subscription found", 404));
     }
 
-    if (
-      new Date(subscription.subscriptionDetails.subscriptionEndDate) <
-      new Date()
-    ) {
+    if (subscription.subscriptionDetails.subscriptionEndDate < new Date()) {
       await Subscription.findByIdAndUpdate(subscription._id, {
         $set: {
           isActive: false,
