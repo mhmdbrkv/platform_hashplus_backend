@@ -7,9 +7,23 @@ import { aggregateRatings } from "../utils/aggregateRatings.js";
 
 const getReviews = async (req, res, next) => {
   try {
+    // Nested Route
+    let filter = {};
+    if (req.params.contentId) {
+      if (!mongoose.isValidObjectId(req.params.contentId)) {
+        return next(
+          new ApiError(
+            "contentId param is not a valid mongoose ObjectId!",
+            400,
+          ),
+        );
+      }
+      filter = { content: req.params.contentId };
+    }
+
     // Build the query
     const numOfDocument = await Review.countDocuments();
-    const apiFeatures = new ApiFeatures(Review.find(), req.query)
+    const apiFeatures = new ApiFeatures(Review.find(filter), req.query)
       .paginate(numOfDocument)
       .filter()
       .limitFields()

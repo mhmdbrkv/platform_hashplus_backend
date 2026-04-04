@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import slugify from "slugify";
 import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";
@@ -5,9 +6,23 @@ import ApiFeatures from "../utils/apiFeatures.js";
 
 const getContents = async (req, res, next) => {
   try {
+    // Nested Route
+    let filter = {};
+    if (req.params.categoryId) {
+      if (!mongoose.isValidObjectId(req.params.categoryId)) {
+        return next(
+          new ApiError(
+            "categoryId param is not a valid mongoose ObjectId!",
+            400,
+          ),
+        );
+      }
+      filter = { category: req.params.categoryId };
+    }
+
     // Build the query
     const numOfDocument = await Content.countDocuments();
-    const apiFeatures = new ApiFeatures(Content.find(), req.query)
+    const apiFeatures = new ApiFeatures(Content.find(filter), req.query)
       .paginate(numOfDocument)
       .filter()
       .limitFields()

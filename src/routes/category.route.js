@@ -14,7 +14,7 @@ import { guard } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 //Nested Route
-router.use("/:categoryId/content", contentRoute);
+router.use("/:categoryId/contents", contentRoute);
 
 router.get("/", getCategories);
 router.get("/:id", getCategory);
