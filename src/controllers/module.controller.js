@@ -6,26 +6,32 @@ import { Content, Course, Bootcamp } from "../models/content.model.js";
 
 const getOneModule = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { moduleId } = req.params;
+    const { contentId } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
+    if (!mongoose.isValidObjectId(moduleId)) {
       return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
       );
     }
 
-    const moduleId = new mongoose.Types.ObjectId(id);
+    if (!mongoose.isValidObjectId(contentId)) {
+      return next(
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
 
-    const content = await Content.findOne(
-      { "modules._id": moduleId },
-      { "modules.$": 1 },
-    );
+    const content = await Content.findById(contentId);
 
     if (!content) {
       return next(new ApiError("No module found with this id.", 404));
     }
 
-    const module = content?.modules[0];
+    const module = content.modules.id(moduleId);
+
+    if (!module) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
 
     res.status(200).json({
       status: "success",
@@ -44,7 +50,6 @@ const addCourseModule = async (req, res, next) => {
   try {
     const {
       moduleType,
-      contentId,
       title,
       description,
       videoData,
@@ -52,6 +57,8 @@ const addCourseModule = async (req, res, next) => {
       taskData,
       linkData,
     } = req.body || {};
+
+    const { contentId } = req.params;
 
     if (!mongoose.isValidObjectId(contentId)) {
       return next(
@@ -144,7 +151,14 @@ const addCourseModule = async (req, res, next) => {
     res.status(201).json({
       status: "success",
       message: "Module Added Successfully!",
-      content,
+      data: {
+        _id: content.modules[content.modules.length - 1]._id,
+        title,
+        description,
+        moduleType,
+        order: (content.modules.length ?? 0) + 1,
+        ...dataObj,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -154,15 +168,21 @@ const addCourseModule = async (req, res, next) => {
 
 const updateOneCourseModule = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { contentId } = req.params;
+    const { moduleId } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
+    if (!mongoose.isValidObjectId(contentId)) {
       return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
       );
     }
 
-    const moduleId = new mongoose.Types.ObjectId(id);
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return next(
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
     const {
       moduleType,
       title,
@@ -173,9 +193,14 @@ const updateOneCourseModule = async (req, res, next) => {
       linkData,
     } = req.body || {};
 
-    const content = await Course.findOne({ "modules._id": moduleId });
-    if (!content) return next(new ApiError("No Module Found", 404));
-    const module = content.modules.id(moduleId); // Mongoose subdoc helper
+    const content = await Course.findById(contentId);
+
+    if (!content) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
+    const module = content.modules.id(moduleId);
+
     if (!module) return next(new ApiError("No Module Found", 404));
 
     if (title !== undefined) module.title = title;
@@ -231,17 +256,22 @@ const updateOneCourseModule = async (req, res, next) => {
 
 const removeOneCourseModule = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { contentId } = req.params;
+    const { moduleId } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
+    if (!mongoose.isValidObjectId(contentId)) {
       return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
       );
     }
 
-    const moduleId = new mongoose.Types.ObjectId(id);
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return next(
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
 
-    const content = await Course.findOne({ "modules._id": moduleId });
+    const content = await Course.findById(contentId);
 
     if (!content) {
       return next(new ApiError("No module found with this id.", 404));
@@ -277,7 +307,6 @@ const removeOneCourseModule = async (req, res, next) => {
 const addBootcampModule = async (req, res, next) => {
   try {
     const {
-      contentId,
       title,
       description,
       liveSession,
@@ -287,6 +316,8 @@ const addBootcampModule = async (req, res, next) => {
       timezone,
       projects,
     } = req.body || {};
+
+    const { contentId } = req.params;
 
     if (!mongoose.isValidObjectId(contentId)) {
       return next(
@@ -346,7 +377,17 @@ const addBootcampModule = async (req, res, next) => {
     res.status(201).json({
       status: "success",
       message: "Module Added Successfully!",
-      content,
+      data: {
+        _id: content.modules[content.modules.length - 1]._id,
+        title,
+        description,
+        liveSession,
+        video: video ? { ...video, uploadedAt: new Date() } : undefined,
+        timeStart,
+        timeEnd,
+        timezone,
+        projects,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -356,15 +397,21 @@ const addBootcampModule = async (req, res, next) => {
 
 const updateOneBootcampModule = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { contentId } = req.params;
+    const { moduleId } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
+    if (!mongoose.isValidObjectId(contentId)) {
       return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
       );
     }
 
-    const moduleId = new mongoose.Types.ObjectId(id);
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return next(
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
     const {
       title,
       description,
@@ -376,10 +423,14 @@ const updateOneBootcampModule = async (req, res, next) => {
       projects,
     } = req.body || {};
 
-    const content = await Bootcamp.findOne({ "modules._id": moduleId });
-    if (!content) return next(new ApiError("No Module Found", 404));
+    const content = await Bootcamp.findById(contentId);
+
+    if (!content) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
 
     const module = content.modules.id(moduleId);
+
     if (!module) return next(new ApiError("No Module Found", 404));
 
     if (title !== undefined) module.title = title;
@@ -398,13 +449,12 @@ const updateOneBootcampModule = async (req, res, next) => {
       };
     }
 
-    if (
-      video !== undefined &&
-      video.url &&
-      video.key &&
-      video.duration &&
-      video.size
-    ) {
+    if (video !== undefined) {
+      if (!video.url || !video.key || !video.duration || !video.size) {
+        return next(
+          new ApiError("video url, key, duration and size are required!", 400),
+        );
+      }
       module.video = { ...video, uploadedAt: new Date() };
     }
 
@@ -440,17 +490,22 @@ const updateOneBootcampModule = async (req, res, next) => {
 
 const removeOneBootcampModule = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { contentId } = req.params;
+    const { moduleId } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
+    if (!mongoose.isValidObjectId(contentId)) {
       return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
       );
     }
 
-    const moduleId = new mongoose.Types.ObjectId(id);
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return next(
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
 
-    const content = await Bootcamp.findOne({ "modules._id": moduleId });
+    const content = await Bootcamp.findById(contentId);
 
     if (!content) {
       return next(new ApiError("No module found with this id.", 404));
