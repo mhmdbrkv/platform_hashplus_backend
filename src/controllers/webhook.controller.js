@@ -56,6 +56,8 @@ const handleGeneralSubscriptionPayment = async (user, payment) => {
     });
 
     user.isSubscribed = true;
+    user.subscriptionStartDate = startDate;
+    user.subscriptionEndDate = endDate;
     await user.save();
 
     return { startDate, endDate };
@@ -64,6 +66,7 @@ const handleGeneralSubscriptionPayment = async (user, payment) => {
     throw err;
   }
 };
+
 // handle bootcamp subscription payment
 const handleBootcampSubscriptionPayment = async (user, payment) => {
   try {
@@ -104,8 +107,10 @@ const handleBootcampSubscriptionPayment = async (user, payment) => {
       isActive: true,
     });
 
-    user.bootcamps.push(bootcampId);
-    await user.save();
+    if (!user.bootcamps.includes(bootcampId)) {
+      user.bootcamps.push(bootcampId);
+      await user.save();
+    }
 
     return { bootcamp };
   } catch (err) {
@@ -136,59 +141,101 @@ const moyasarWebhook = async (req, res) => {
       return res.status(401).json({ message: "Invalid webhook secret" });
     }
 
-    const payment = event.data;
+    // Immediately return 200 OK to prevent timeouts and retries from Moyasar
+    res.status(200).json({ message: "Webhook received" });
 
-    const { customer_id, type, subscriptionName, plan_months } =
-      payment?.metadata || {};
+    // Process the heavy logic asynchronously in the background
+    (async () => {
+      try {
+        const payment = event.data;
 
-    // 2. Look up User
-    const user = await User.findById(customer_id);
-    if (!user) {
-      console.error(`User ${customer_id} not found for payment ${payment.id}`);
-      return res.status(404).json({ message: "User not found" });
-    }
+        const { customer_id, type, subscriptionName, plan_months } =
+          payment?.metadata || {};
 
-    // 3. Handle Specific Event Types
-    if (event.type === "payment_failed") {
-      await sendEmail({
-        email: user.email,
-        subject: "فشل الدفع في هاش بلس",
-        message: `مرحبا ${user.name},\n\nنود إعلامك بأن محاولتك للاشتراك لم تكتمل بنجاح...`,
-      });
-      return res.status(200).json({ message: "Failure handled" });
-    }
+        // 2. Look up User
+        const user = await User.findById(customer_id);
+        if (!user) {
+          console.error(
+            `User ${customer_id} not found for payment ${payment.id}`,
+          );
+          return;
+        }
 
-    if (event.type !== "payment_paid") {
-      return res.status(200).json({ message: "Event ignored" });
-    }
+        // 3. Handle Specific Event Types
+        if (event.type === "payment_failed") {
+          await sendEmail({
+            email: user.email,
+            subject: "فشل الدفع في هاش بلس",
+            message: `مرحبا ${user.name},\n\nنود إعلامك بأن محاولتك للاشتراك لم تكتمل بنجاح...`,
+          });
+          return;
+        }
 
-    let options = {};
-    let adminOptions = {};
+        if (event.type === "payment_refunded") {
+          const subscription = await Subscription.findOne({
+            "paymentDetails.paymentId": payment.id,
+          });
 
-    // 6. Create subscription record
-    let subscriptionRecord = await Subscription.findOne({
-      "paymentDetails.paymentId": payment.id,
-    });
+          if (!subscription) {
+            console.error(`Subscription not found for payment ${payment.id}`);
+            return;
+          }
 
-    if (!subscriptionRecord) {
-      if (type === "general") {
-        const { startDate, endDate } = await handleGeneralSubscriptionPayment(
-          user,
-          payment,
-        );
+          subscription.isActive = false;
+          await subscription.save();
 
-        // Email options to notify user about new payment
-        options = {
-          email: user.email,
-          subject: "تم الاشتراك بنجاح",
-          message: `مرحبا ${user.name},\n\nتم تفعيل اشتراكك في منصة هاش بلس بنجاح حتى ${endDate.toDateString()}.`,
-        };
+          if (subscription.type === "general") {
+            user.isSubscribed = false;
+            user.subscriptionEndDate = null;
+            user.subscriptionStartDate = null;
+            await user.save();
+          } else if (subscription.type === "bootcamp") {
+            user.bootcamps = user.bootcamps.filter(
+              (bootcamp) =>
+                bootcamp.toString() !== subscription.bootcamp.toString(),
+            );
+            await user.save();
+          }
 
-        // Email options to notify admin about new payment
-        adminOptions = {
-          email: EMAIL_USER,
-          subject: "مشترك جديد في منصة هاش بلس!",
-          message: `
+          console.log("sending email after payment refund from webhook...");
+
+          await sendEmail({
+            email: user.email,
+            subject: "تم استرداد الدفعة في هاش بلس",
+            message: `مرحبا ${user.name},\n\nتم استرداد دفعتك في منصة هاش بلس بنجاح.`,
+          });
+          return;
+        }
+
+        if (event.type !== "payment_paid") {
+          return;
+        }
+
+        let options = {};
+        let adminOptions = {};
+
+        // 6. Create subscription record
+        let subscriptionRecord = await Subscription.findOne({
+          "paymentDetails.paymentId": payment.id,
+        });
+
+        if (!subscriptionRecord) {
+          if (type === "general") {
+            const { startDate, endDate } =
+              await handleGeneralSubscriptionPayment(user, payment);
+
+            // Email options to notify user about new payment
+            options = {
+              email: user.email,
+              subject: "تم الاشتراك بنجاح",
+              message: `مرحبا ${user.name},\n\nتم تفعيل اشتراكك في منصة هاش بلس بنجاح حتى ${endDate.toDateString()}.`,
+            };
+
+            // Email options to notify admin about new payment
+            adminOptions = {
+              email: EMAIL_USER,
+              subject: "مشترك جديد في منصة هاش بلس!",
+              message: `
       قام ${user.name} بالاشتراك في باقة ${subscriptionName} المميزة.
 
       تفاصيل الاشتراك:
@@ -201,25 +248,25 @@ const moyasarWebhook = async (req, res) => {
       - معرّف الدفعة: ${payment.id}
       - رابط الدفعة: ${payment.receipt_url}
       `,
-        };
-      } else if (type === "bootcamp") {
-        const { bootcamp } = await handleBootcampSubscriptionPayment(
-          user,
-          payment,
-        );
+            };
+          } else if (type === "bootcamp") {
+            const { bootcamp } = await handleBootcampSubscriptionPayment(
+              user,
+              payment,
+            );
 
-        // Email options to notify user about new payment
-        options = {
-          email: user.email,
-          subject: "تم الاشتراك بنجاح",
-          message: `مرحبا ${user.name},\n\nتم تفعيل اشتراكك في بوتكامب "${bootcamp.title || subscriptionName}" بنجاح.`,
-        };
+            // Email options to notify user about new payment
+            options = {
+              email: user.email,
+              subject: "تم الاشتراك بنجاح",
+              message: `مرحبا ${user.name},\n\nتم تفعيل اشتراكك في بوتكامب "${bootcamp.title || subscriptionName}" بنجاح.`,
+            };
 
-        // Email options to notify admin about new payment
-        adminOptions = {
-          email: EMAIL_USER,
-          subject: "مشترك جديد في منصة هاش بلس!",
-          message: `
+            // Email options to notify admin about new payment
+            adminOptions = {
+              email: EMAIL_USER,
+              subject: "مشترك جديد في منصة هاش بلس!",
+              message: `
       قام ${user.name} بالاشتراك في بوتكامب ${bootcamp.title || subscriptionName}.
 
       تفاصيل الاشتراك:
@@ -229,27 +276,32 @@ const moyasarWebhook = async (req, res) => {
       - معرّف الدفعة: ${payment.id}
       - رابط الدفعة: ${payment.receipt_url}
       `,
-        };
-      } else {
-        return res.status(400).json({ message: "Invalid subscription type" });
-      }
+            };
+          } else {
+            console.error("Invalid subscription type");
+            return;
+          }
 
-      // 7. send email to user and admin
-      try {
-        console.log("sending email after payment success from webhook...");
-        // send email to user
-        await sendEmail(options);
-        // send email to admin
-        await sendEmail(adminOptions);
-      } catch (err) {
-        console.error(err);
+          // 7. send email to user and admin
+          try {
+            console.log("sending email after payment success from webhook...");
+            // send email to user
+            await sendEmail(options);
+            // send email to admin
+            await sendEmail(adminOptions);
+          } catch (err) {
+            console.error("Email send error:", err);
+          }
+        }
+      } catch (backgroundErr) {
+        console.error("Moyasar background processing error:", backgroundErr);
       }
-    }
-
-    return res.status(200).json({ message: "Webhook processed successfully" });
+    })();
   } catch (err) {
-    console.error("Moyasar webhook error:", err);
-    return res.status(500).json({ message: "Webhook error" });
+    console.error("Moyasar webhook initial error:", err);
+    if (!res.headersSent) {
+      return res.status(400).json({ message: "Webhook error" });
+    }
   }
 };
 

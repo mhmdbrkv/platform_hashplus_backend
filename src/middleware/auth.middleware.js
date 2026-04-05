@@ -87,11 +87,15 @@ const guard = async (req, res, next) => {
 
       if (!subscription) {
         loggedUser.isSubscribed = false;
+        loggedUser.subscriptionEndDate = null;
+        loggedUser.subscriptionStartDate = null;
       } else if (
         subscription.subscriptionDetails.subscriptionEndDate < new Date()
       ) {
         subscription.isActive = false;
         loggedUser.isSubscribed = false;
+        loggedUser.subscriptionEndDate = null;
+        loggedUser.subscriptionStartDate = null;
         await subscription.save();
 
         // Email notification

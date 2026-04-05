@@ -31,7 +31,13 @@ function scheduleDailySubscriptionReset() {
 
         await User.updateMany(
           { _id: { $in: userIds } },
-          { $set: { isSubscribed: false } },
+          {
+            $set: {
+              isSubscribed: false,
+              subscriptionEndDate: null,
+              subscriptionStartDate: null,
+            },
+          },
         );
 
         // 3. Send emails sequentially to avoid spamming the SMTP server
