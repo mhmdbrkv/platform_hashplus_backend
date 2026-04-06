@@ -37,10 +37,14 @@ const subscriptionSchema = new mongoose.Schema(
       paymentMethod: String,
       paymentAmount: Number,
       paymentCurrency: String,
+      refunded: { type: Boolean, default: false },
+      refundDate: Date,
       _id: false,
     },
 
     isActive: { type: Boolean, default: true },
+    canceled: { type: Boolean, default: false },
+    canceledAt: Date,
   },
   { timestamps: true },
 );

@@ -181,21 +181,16 @@ const moyasarWebhook = async (req, res) => {
             return;
           }
 
-          subscription.isActive = false;
-          await subscription.save();
-
-          if (subscription.type === "general") {
-            user.isSubscribed = false;
-            user.subscriptionEndDate = null;
-            user.subscriptionStartDate = null;
-            await user.save();
-          } else if (subscription.type === "bootcamp") {
-            user.bootcamps = user.bootcamps.filter(
-              (bootcamp) =>
-                bootcamp.toString() !== subscription.bootcamp.toString(),
+          if (subscription.paymentDetails?.refunded) {
+            console.error(
+              `Subscription already refunded for payment ${payment.id}`,
             );
-            await user.save();
+            return;
           }
+
+          subscription.paymentDetails.refunded = true;
+          subscription.paymentDetails.refundDate = Date.now();
+          await subscription.save();
 
           console.log("sending email after payment refund from webhook...");
 

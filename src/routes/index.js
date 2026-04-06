@@ -5,6 +5,7 @@ import contentRoutes from "./content.route.js";
 import reviewRoutes from "./review.route.js";
 import moduleRoutes from "./module.route.js";
 import uploadRoutes from "./upload.route.js";
+import subscriptionRoutes from "./subscription.route.js";
 
 export default (app) => {
   app.use("/api/v1/auth", authRoutes);
@@ -14,4 +15,5 @@ export default (app) => {
   app.use("/api/v1/reviews", reviewRoutes);
   app.use("/api/v1/modules", moduleRoutes);
   app.use("/api/v1/uploads", uploadRoutes);
+  app.use("/api/v1/subscriptions", subscriptionRoutes);
 };
