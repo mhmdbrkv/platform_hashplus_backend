@@ -103,8 +103,9 @@ const createContent = async (req, res, next) => {
       totalProjects,
     } = req.body;
 
-    if ((!title, !typeof title === "string"))
+    if (!title || typeof title !== "string") {
       return next(new ApiError("Content title required", 400));
+    }
 
     const slug = `${title}`.trim();
 
@@ -113,12 +114,17 @@ const createContent = async (req, res, next) => {
       return next(new ApiError("Content already exists", 400));
     }
 
+    const finalInstructor = instructor || req.user?._id;
+    const finalPrice = typeof price === "object" && price !== null 
+      ? price 
+      : { amount: Number(price) };
+
     const newContent = await Content.create({
       title: `${title}`.trim(),
       slug,
       contentType,
       category,
-      instructor,
+      instructor: finalInstructor,
       description,
       learningOutcomes,
       prerequisites,
@@ -127,11 +133,11 @@ const createContent = async (req, res, next) => {
       level,
       language,
       materials,
-      price,
+      price: finalPrice,
       thumbnail: null,
       welcomeVideo: null,
-      startDate: contentType === "bootcamp" ? new Date(startDate) : null,
-      endDate: contentType === "bootcamp" ? new Date(endDate) : null,
+      startDate: contentType === "bootcamp" && startDate ? new Date(startDate) : null,
+      endDate: contentType === "bootcamp" && endDate ? new Date(endDate) : null,
       totalProjects: contentType === "bootcamp" ? totalProjects : null,
     });
 
@@ -142,6 +148,9 @@ const createContent = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      return next(new ApiError(error.message, 400));
+    }
     next(new ApiError(error, 500));
   }
 };
