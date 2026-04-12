@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { Content, Course, Bootcamp } from "../models/content.model.js";
+import CourseQuizAnswers from "../models/quizAnswers.model.js";
+import Learning from "../models/learning.model.js";
 
 //------------------------ ALL ------------------------//
 
@@ -31,6 +33,27 @@ const getOneModule = async (req, res, next) => {
 
     if (!module) {
       return next(new ApiError("No module found with this id.", 404));
+    }
+
+    // check if the content is in learning model
+    const learning = await Learning.findOne({
+      user: req.user._id,
+      content: contentId,
+      type: "course",
+    });
+
+    if (!learning) {
+      return next(new ApiError("You are not enrolled in this course.", 400));
+    }
+
+    // update the learning progress
+    if (learning.progress < 100) {
+      // Calculate new progress and ensure it doesn't exceed 100
+      learning.progress = Math.min(
+        100,
+        learning.progress + 100 / content.modules.length,
+      );
+      await learning.save();
     }
 
     res.status(200).json({
@@ -302,6 +325,147 @@ const removeOneCourseModule = async (req, res, next) => {
   }
 };
 
+const answerCourseQuiz = async (req, res, next) => {
+  try {
+    const { contentId } = req.params;
+    const { moduleId } = req.params;
+
+    if (!mongoose.isValidObjectId(contentId)) {
+      return next(
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return next(
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    const { answers } = req.body || {};
+
+    if (!answers || !Array.isArray(answers) || answers.length === 0) {
+      return next(new ApiError("Answers are required.", 400));
+    }
+
+    const content = await Course.findById(contentId);
+
+    if (!content) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
+    const module = content.modules.id(moduleId);
+
+    if (!module) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
+    if (module.moduleType !== "quiz") {
+      return next(new ApiError("Module is not a quiz module.", 400));
+    }
+
+    // check if the content is in learning model
+    const learning = await Learning.findOne({
+      user: req.user._id,
+      content: contentId,
+      type: "course",
+    });
+
+    if (!learning) {
+      return next(new ApiError("You are not enrolled in this course.", 400));
+    }
+
+    // check the questions in the module and compare with the questions in the answers
+    const quizArray = module.quiz;
+
+    for (const quiz of quizArray) {
+      if (
+        !answers.some(
+          (answer) =>
+            typeof answer.question === "string" &&
+            answer.question.toLowerCase().trim() ===
+              quiz.question.toLowerCase().trim(),
+        )
+      ) {
+        return next(new ApiError("Answer is required for each question.", 400));
+      }
+    }
+
+    // check if the user has already answered the quiz
+    const quizAnswers = await CourseQuizAnswers.findOne({
+      user: req.user._id,
+      content: contentId,
+      moduleId,
+    });
+
+    const newQuizAnswers = new CourseQuizAnswers({
+      user: req.user._id,
+      content: contentId,
+      moduleId,
+      answers,
+    });
+
+    await newQuizAnswers.save();
+
+    // update the learning progress only if the user has not answered the quiz before
+    if (!quizAnswers && learning.progress < 100) {
+      // Calculate new progress and ensure it doesn't exceed 100
+      learning.progress = Math.min(
+        100,
+        learning.progress + 100 / content.modules.length,
+      );
+      await learning.save();
+    }
+
+    res.status(201).json({
+      status: "success",
+      message: "Quiz answers saved successfully!",
+      data: newQuizAnswers,
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error saving quiz answers.", 400));
+  }
+};
+
+const getCourseQuizAnswers = async (req, res, next) => {
+  try {
+    const { contentId } = req.params;
+    const { moduleId } = req.params;
+
+    if (!mongoose.isValidObjectId(contentId)) {
+      return next(
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return next(
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    const quizAnswers = await CourseQuizAnswers.findOne({
+      user: req.user._id,
+      content: contentId,
+      moduleId,
+    });
+
+    if (!quizAnswers) {
+      return next(new ApiError("No quiz answers found with this id.", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Quiz answers fetched successfully!",
+      data: quizAnswers,
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error fetching quiz answers.", 400));
+  }
+};
+
 //------------------------ BOOTCAMP ------------------------//
 
 const addBootcampModule = async (req, res, next) => {
@@ -541,4 +705,6 @@ export {
   addBootcampModule,
   updateOneBootcampModule,
   removeOneBootcampModule,
+  answerCourseQuiz,
+  getCourseQuizAnswers,
 };

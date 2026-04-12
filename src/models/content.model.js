@@ -77,15 +77,15 @@ const contentSchema = new mongoose.Schema(
     },
 
     thumbnail: {
-      public_id: { type: String, default: "" },
       url: { type: String, default: "" },
+      key: { type: String, default: "" },
       uploadedAt: Date,
       _id: false,
     },
 
     welcomeVideo: {
-      public_id: { type: String, default: "" },
       url: { type: String, default: "" },
+      key: { type: String, default: "" },
       uploadedAt: Date,
       _id: false,
     },
@@ -134,8 +134,8 @@ contentSchema.pre("save", async function () {
 // Base module schema — discriminatorKey matches the existing "moduleType" field
 const moduleSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: { type: String, required: true, trim: true },
+    description: { type: String, required: true, trim: true },
     order: { type: Number, default: 0 }, // ✅ Explicit ordering field
   },
   { discriminatorKey: "moduleType", _id: true },
@@ -143,9 +143,9 @@ const moduleSchema = new mongoose.Schema(
 
 const videoModuleSchema = new mongoose.Schema({
   video: {
-    url: { type: String, default: "" },
-    key: { type: String, default: "" },
-    uploadId: { type: String, default: "" },
+    url: { type: String, default: "", trim: true },
+    key: { type: String, default: "", trim: true },
+    uploadId: { type: String, default: "", trim: true },
     size: { type: Number, default: 0 },
     duration: { type: Number, default: 0 },
     uploadedAt: Date,
@@ -156,19 +156,19 @@ const videoModuleSchema = new mongoose.Schema({
 const quizModuleSchema = new mongoose.Schema({
   quiz: [
     {
-      question: { type: String, required: true },
+      question: { type: String, required: true, trim: true },
       options: { type: [String], required: true },
       // ✅ answer excluded from API responses by default
-      answer: { type: String, required: true, select: false },
+      answer: { type: String, required: true, select: false, trim: true },
     },
   ],
 });
 
 const taskModuleSchema = new mongoose.Schema({
   task: {
-    url: { type: String, default: "" },
-    imageUrl: { type: String, default: "" },
-    description: { type: String, default: "" },
+    url: { type: String, default: "", trim: true },
+    imageUrl: { type: String, default: "", trim: true },
+    description: { type: String, default: "", trim: true },
     uploadedAt: Date,
     _id: false,
   },
@@ -176,8 +176,8 @@ const taskModuleSchema = new mongoose.Schema({
 
 const linkModuleSchema = new mongoose.Schema({
   link: {
-    url: { type: String, default: "" },
-    description: { type: String, default: "" },
+    url: { type: String, default: "", trim: true },
+    description: { type: String, default: "", trim: true },
     _id: false,
   },
 });
@@ -209,21 +209,22 @@ const bootcampSchema = new mongoose.Schema(
 
     modules: [
       {
-        title: { type: String, required: true },
-        description: { type: String, required: true },
+        title: { type: String, required: true, trim: true },
+        description: { type: String, required: true, trim: true },
 
         timeStart: String, // "09:00"
         timeEnd: String, // "17:00"
         timezone: { type: String, default: "Asia/Riyadh" },
 
         liveSession: {
-          url: { type: String, default: "" },
+          url: { type: String, default: "", trim: true },
           _id: false,
         },
 
         video: {
-          key: { type: String, default: "" },
-          url: { type: String, default: "" },
+          url: { type: String, default: "", trim: true },
+          key: { type: String, default: "", trim: true },
+          uploadId: { type: String, default: "", trim: true },
           duration: { type: Number, default: 0 },
           size: { type: Number, default: 0 },
           uploadedAt: Date,
@@ -232,10 +233,10 @@ const bootcampSchema = new mongoose.Schema(
 
         projects: [
           {
-            title: String,
-            description: String,
-            githubUrl: String,
-            liveDemoUrl: String,
+            title: { type: String, required: true, trim: true },
+            description: { type: String, required: true, trim: true },
+            githubUrl: { type: String, default: "", trim: true },
+            liveDemoUrl: { type: String, default: "", trim: true },
           },
         ],
       },

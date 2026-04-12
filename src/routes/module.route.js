@@ -8,6 +8,8 @@ import {
   addBootcampModule,
   updateOneBootcampModule,
   removeOneBootcampModule,
+  answerCourseQuiz,
+  getCourseQuizAnswers,
 } from "../controllers/module.controller.js";
 
 import {
@@ -22,6 +24,21 @@ router.use(guard);
 router.get("/:moduleId", getOneModule); // One Module Route (Public) For development
 router.get("/:moduleId/course", checkSubscription, getOneModule); // Course Modules Route (Private)
 router.get("/:moduleId/bootcamp", checkBootCampSubscription, getOneModule); // Bootcamp Modules Route (Private)
+
+// Course Quiz Routes
+router.patch(
+  "/:moduleId/course-quiz",
+  allowedTo("user"),
+  checkSubscription,
+  answerCourseQuiz,
+);
+
+router.get(
+  "/:moduleId/course-quiz",
+  allowedTo("user"),
+  checkSubscription,
+  getCourseQuizAnswers,
+);
 
 router.use(allowedTo("admin", "instructor"));
 
