@@ -219,11 +219,15 @@ const updateOneCourseModule = async (req, res, next) => {
           new ApiError("quizData is required for quiz module updates.", 400),
         );
 
-      module.quiz = quizData.map(({ question, options, answer }) => ({
-        question,
-        options,
-        answer,
-      }));
+      module.quiz = quizData.map(
+        ({ question, options, answer, userAnswer, isCorrect }) => ({
+          question,
+          options,
+          answer,
+          userAnswer,
+          isCorrect,
+        }),
+      );
     } else if (moduleType && moduleType === "task") {
       if (!taskData)
         return next(
