@@ -160,8 +160,6 @@ const quizModuleSchema = new mongoose.Schema({
       options: { type: [String], required: true },
       // ✅ answer excluded from API responses by default
       answer: { type: String, required: true, select: false },
-      userAnswer: { type: String, select: false, default: "" },
-      isCorrect: { type: Boolean, select: false, default: false },
     },
   ],
 });
