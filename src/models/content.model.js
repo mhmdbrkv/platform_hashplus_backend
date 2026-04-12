@@ -162,7 +162,6 @@ const quizModuleSchema = new mongoose.Schema({
       answer: { type: String, required: true, select: false },
       userAnswer: { type: String, select: false, default: "" },
       isCorrect: { type: Boolean, select: false, default: false },
-      _id: true,
     },
   ],
 });
