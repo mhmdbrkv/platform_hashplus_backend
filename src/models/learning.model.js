@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const myLearningSchema = new mongoose.Schema(
+const learningSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -30,6 +30,6 @@ const myLearningSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const MyLearning = mongoose.model("MyLearning", myLearningSchema);
+const Learning = mongoose.model("Learning", learningSchema);
 
-export default MyLearning;
+export default Learning;
