@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import slugify from "slugify";
 import { Content } from "../models/content.model.js";
+import FinalProjectAnswer from "../models/finalProjectAnswer.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 
@@ -49,8 +50,8 @@ const getContents = async (req, res, next) => {
 
 const getContent = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const content = await Content.findById(id)
+    const { contentId } = req.params;
+    const content = await Content.findById(contentId)
       .populate({
         path: "reviews",
         select: "review rating user",
@@ -176,12 +177,12 @@ const createContent = async (req, res, next) => {
 
 const updateContent = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { contentId } = req.params;
     const { title } = req.body;
     const slug = title ? slugify(title) : undefined;
 
     const content = await Content.findByIdAndUpdate(
-      id,
+      contentId,
       { title, slug },
       { returnDocument: "after" },
     );
@@ -203,14 +204,14 @@ const updateContent = async (req, res, next) => {
 
 const deleteContent = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { contentId } = req.params;
 
-    const content = await Content.findById(id);
+    const content = await Content.findById(contentId);
     if (!content) {
       return next(new ApiError("Content not found", 404));
     }
 
-    await Content.findByIdAndDelete(id);
+    await Content.findByIdAndDelete(contentId);
     res.status(204).json({
       status: "success",
       message: "Content deleted successfully",
@@ -221,4 +222,51 @@ const deleteContent = async (req, res, next) => {
   }
 };
 
-export { getContents, getContent, createContent, updateContent, deleteContent };
+const completeFinalProject = async (req, res, next) => {
+  try {
+    const { contentId } = req.params;
+
+    if (!mongoose.isValidObjectId(contentId)) {
+      return next(
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    const { links, notes } = req.body || {};
+
+    if (!links || !Array.isArray(links) || links.length === 0) {
+      return next(new ApiError("Links are required.", 400));
+    }
+
+    const content = await Content.findById(contentId);
+
+    if (!content) {
+      return next(new ApiError("No course found with this id.", 404));
+    }
+
+    const completeProject = await FinalProjectAnswer.create({
+      user: req.user._id,
+      content: contentId,
+      links,
+      notes,
+    });
+
+    res.status(201).json({
+      status: "success",
+      message: "Final Project Completed!",
+      data: completeProject,
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error completing final project", 500));
+  }
+};
+
+export {
+  getContents,
+  getContent,
+  createContent,
+  updateContent,
+  deleteContent,
+  completeFinalProject,
+};
