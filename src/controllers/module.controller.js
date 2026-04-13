@@ -3,6 +3,7 @@ import { ApiError } from "../utils/apiError.js";
 import { Content, Course, Bootcamp } from "../models/content.model.js";
 import CourseQuizAnswers from "../models/quizAnswers.model.js";
 import Learning from "../models/learning.model.js";
+import { updateLearningProgress } from "../utils/updateLearningProgress.js";
 
 //------------------------ ALL ------------------------//
 
@@ -87,15 +88,8 @@ const getOneModule = async (req, res, next) => {
       return next(new ApiError("You are not enrolled in this course.", 400));
     }
 
-    // update the learning progress
-    if (learning.progress < 100) {
-      // Calculate new progress and ensure it doesn't exceed 100
-      learning.progress = Math.min(
-        100,
-        learning.progress + 100 / content.modules.length,
-      );
-      await learning.save();
-    }
+    // update learning progress
+    await updateLearningProgress(learning, content, moduleId);
 
     res.status(200).json({
       status: "success",
@@ -208,7 +202,6 @@ const addCourseModule = async (req, res, next) => {
         dataObj = {
           link: {
             url: linkData.url,
-            description: linkData.description,
           },
         };
         break;
@@ -466,8 +459,6 @@ const answerCourseQuiz = async (req, res, next) => {
       moduleId,
     });
 
-    let isLearningUpdated = false;
-
     if (quizAnswers) {
       quizAnswers.answers = answers;
     } else {
@@ -477,16 +468,6 @@ const answerCourseQuiz = async (req, res, next) => {
         moduleId,
         answers,
       });
-
-      // update the learning progress only if the user has not answered the quiz before
-      if (learning.progress < 100) {
-        // Calculate new progress and ensure it doesn't exceed 100
-        learning.progress = Math.min(
-          100,
-          learning.progress + 100 / content.modules.length,
-        );
-        isLearningUpdated = true;
-      }
     }
 
     // calculate the score
@@ -509,13 +490,7 @@ const answerCourseQuiz = async (req, res, next) => {
     quizAnswers.score = score;
     quizAnswers.status = score >= quizArray.length / 2 ? "pass" : "fail";
 
-    const promises = [quizAnswers.save()];
-    if (isLearningUpdated) {
-      promises.push(learning.save());
-    }
-
-    // Attempt saving everything simultaneously
-    await Promise.all(promises);
+    await quizAnswers.save();
 
     res.status(201).json({
       status: "success",

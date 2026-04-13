@@ -14,10 +14,18 @@ const learningSchema = new mongoose.Schema(
       required: [true, "Content required"],
     },
 
+    modulesCompleted: { type: [String], default: [] },
+
     type: {
       type: String,
       enum: ["course", "bootcamp"],
       required: [true, "Type required"],
+    },
+
+    status: {
+      type: String,
+      enum: ["in-progress", "completed"],
+      default: "in-progress",
     },
 
     progress: {
@@ -25,6 +33,11 @@ const learningSchema = new mongoose.Schema(
       default: 0,
       min: 0,
       max: 100,
+    },
+
+    completedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true },
