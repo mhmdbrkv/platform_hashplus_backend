@@ -156,8 +156,13 @@ const videoModuleSchema = new mongoose.Schema({
 const quizModuleSchema = new mongoose.Schema({
   quiz: [
     {
+      type: {
+        type: String,
+        enum: ["single", "multiple"],
+        default: "single",
+      },
       question: { type: String, required: true, trim: true },
-      options: { type: [String], required: true },
+      options: { type: [String], default: null },
       // ✅ answer excluded from API responses by default
       answer: { type: String, required: true, select: false, trim: true },
     },

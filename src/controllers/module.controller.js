@@ -164,12 +164,26 @@ const addCourseModule = async (req, res, next) => {
           return next(
             new ApiError("quizData is required for quiz modules.", 400),
           );
+
         dataObj = {
-          quiz: quizData.map(({ question, options, answer }) => ({
-            question,
-            options,
-            answer,
-          })),
+          quiz: quizData.map(({ type, question, options, answer }) => {
+            if (type === "single") {
+              return {
+                type,
+                question,
+                answer,
+              };
+            }
+
+            if (type === "multiple") {
+              return {
+                type,
+                question,
+                options,
+                answer,
+              };
+            }
+          }),
         };
         break;
       case "task":
@@ -283,11 +297,24 @@ const updateOneCourseModule = async (req, res, next) => {
           new ApiError("quizData is required for quiz module updates.", 400),
         );
 
-      module.quiz = quizData.map(({ question, options, answer }) => ({
-        question,
-        options,
-        answer,
-      }));
+      module.quiz = quizData.map(({ type, question, options, answer }) => {
+        if (type === "single") {
+          return {
+            type,
+            question,
+            answer,
+          };
+        }
+
+        if (type === "multiple") {
+          return {
+            type,
+            question,
+            options,
+            answer,
+          };
+        }
+      });
     } else if (moduleType && moduleType === "task") {
       if (!taskData)
         return next(
@@ -428,28 +455,32 @@ const answerCourseQuiz = async (req, res, next) => {
               quiz.question.toLowerCase().trim(),
         )
       ) {
-        return next(new ApiError("Answer is required for each question.", 400));
+        return next(new ApiError("Please answer all the questions.", 400));
       }
     }
 
     // check if the user has already answered the quiz
-    const quizAnswers = await CourseQuizAnswers.findOne({
+    let quizAnswers = await CourseQuizAnswers.findOne({
       user: req.user._id,
       content: contentId,
       moduleId,
     });
 
-    const newQuizAnswers = new CourseQuizAnswers({
-      user: req.user._id,
-      content: contentId,
-      moduleId,
-      answers,
-    });
+    if (quizAnswers) {
+      quizAnswers.answers = answers;
+    } else {
+      quizAnswers = new CourseQuizAnswers({
+        user: req.user._id,
+        content: contentId,
+        moduleId,
+        answers,
+      });
+    }
 
-    await newQuizAnswers.save();
+    await quizAnswers.save();
 
     // update the learning progress only if the user has not answered the quiz before
-    if (!quizAnswers && learning.progress < 100) {
+    if (learning.progress < 100) {
       // Calculate new progress and ensure it doesn't exceed 100
       learning.progress = Math.min(
         100,
@@ -461,7 +492,7 @@ const answerCourseQuiz = async (req, res, next) => {
     res.status(201).json({
       status: "success",
       message: "Quiz answers saved successfully!",
-      data: newQuizAnswers,
+      data: quizAnswers,
     });
   } catch (error) {
     console.error(error);
