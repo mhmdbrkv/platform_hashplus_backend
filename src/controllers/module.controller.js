@@ -477,6 +477,26 @@ const answerCourseQuiz = async (req, res, next) => {
       });
     }
 
+    // calculate the score
+    let score = 0;
+    for (const quiz of quizArray) {
+      const answer = answers.find(
+        (answer) =>
+          typeof answer.question === "string" &&
+          answer.question.toLowerCase().trim() ===
+            quiz.question.toLowerCase().trim(),
+      );
+      if (
+        answer &&
+        answer.answer.toLowerCase().trim() === quiz.answer.toLowerCase().trim()
+      ) {
+        score += 1;
+      }
+    }
+
+    quizAnswers.score = score;
+    quizAnswers.status = score >= quizAnswers.length / 2 ? "pass" : "fail";
+
     await quizAnswers.save();
 
     // update the learning progress only if the user has not answered the quiz before
@@ -537,6 +557,8 @@ const getCourseQuizAnswers = async (req, res, next) => {
     next(new ApiError("Error fetching quiz answers.", 400));
   }
 };
+
+// TODO: Add Instructor Quiz Check
 
 //------------------------ BOOTCAMP ------------------------//
 

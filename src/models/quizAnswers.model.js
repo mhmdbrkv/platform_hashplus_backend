@@ -26,6 +26,16 @@ const courseQuizAnswersSchema = new mongoose.Schema({
       },
     },
   ],
+  score: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100,
+  },
+  status: {
+    type: String,
+    enum: ["pass", "fail"],
+  },
 });
 
 const CourseQuizAnswers = mongoose.model(
