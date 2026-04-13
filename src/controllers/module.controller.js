@@ -160,24 +160,11 @@ const addCourseModule = async (req, res, next) => {
           );
 
         dataObj = {
-          quiz: quizData.map(({ type, question, options, answer }) => {
-            if (type === "single") {
-              return {
-                type,
-                question,
-                answer,
-              };
-            }
-
-            if (type === "multiple") {
-              return {
-                type,
-                question,
-                options,
-                answer,
-              };
-            }
-          }),
+          quiz: quizData.map(({ question, options, answer }) => ({
+            question,
+            options,
+            answer,
+          })),
         };
         break;
       case "task":
@@ -290,24 +277,11 @@ const updateOneCourseModule = async (req, res, next) => {
           new ApiError("quizData is required for quiz module updates.", 400),
         );
 
-      module.quiz = quizData.map(({ type, question, options, answer }) => {
-        if (type === "single") {
-          return {
-            type,
-            question,
-            answer,
-          };
-        }
-
-        if (type === "multiple") {
-          return {
-            type,
-            question,
-            options,
-            answer,
-          };
-        }
-      });
+      module.quiz = quizData.map(({ question, options, answer }) => ({
+        question,
+        options,
+        answer,
+      }));
     } else if (moduleType && moduleType === "task") {
       if (!taskData)
         return next(
