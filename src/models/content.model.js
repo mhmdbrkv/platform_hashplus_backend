@@ -90,6 +90,13 @@ const contentSchema = new mongoose.Schema(
       _id: false,
     },
 
+    finalProject: {
+      title: { type: String, trim: true, default: "Final Project" },
+      description: { type: String, trim: true, default: "" },
+      tasks: { type: [String], default: [] },
+      materials: { type: [String], default: [] },
+    },
+
     // ✅ Denormalized metadata — updated explicitly via service layer or middleware
     metadata: {
       modulesCount: { type: Number, default: 0 },

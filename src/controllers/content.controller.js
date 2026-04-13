@@ -98,6 +98,7 @@ const createContent = async (req, res, next) => {
       price,
       thumbnail,
       welcomeVideo,
+      finalProject,
       startDate,
       endDate,
       totalProjects,
@@ -115,9 +116,25 @@ const createContent = async (req, res, next) => {
     }
 
     const finalInstructor = instructor || req.user?._id;
-    const finalPrice = typeof price === "object" && price !== null 
-      ? price 
-      : { amount: Number(price) };
+    const finalPrice =
+      typeof price === "object" && price !== null
+        ? price
+        : { amount: Number(price) };
+
+    if (
+      finalProject &&
+      (!finalProject.title ||
+        !finalProject.description ||
+        !Array.isArray(finalProject.tasks) ||
+        !Array.isArray(finalProject.materials))
+    ) {
+      return next(
+        new ApiError(
+          "Final Project title, description, tasks and materials are required in finalProject",
+          400,
+        ),
+      );
+    }
 
     const newContent = await Content.create({
       title: `${title}`.trim(),
@@ -136,7 +153,9 @@ const createContent = async (req, res, next) => {
       price: finalPrice,
       thumbnail: null,
       welcomeVideo: null,
-      startDate: contentType === "bootcamp" && startDate ? new Date(startDate) : null,
+      finalProject,
+      startDate:
+        contentType === "bootcamp" && startDate ? new Date(startDate) : null,
       endDate: contentType === "bootcamp" && endDate ? new Date(endDate) : null,
       totalProjects: contentType === "bootcamp" ? totalProjects : null,
     });
