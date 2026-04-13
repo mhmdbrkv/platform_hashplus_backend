@@ -419,7 +419,7 @@ const answerCourseQuiz = async (req, res, next) => {
     const content = await Course.findById(contentId);
 
     if (!content) {
-      return next(new ApiError("No module found with this id.", 404));
+      return next(new ApiError("No course found with this id.", 404));
     }
 
     const module = content.modules.id(moduleId);
@@ -466,6 +466,8 @@ const answerCourseQuiz = async (req, res, next) => {
       moduleId,
     });
 
+    let isLearningUpdated = false;
+
     if (quizAnswers) {
       quizAnswers.answers = answers;
     } else {
@@ -475,6 +477,16 @@ const answerCourseQuiz = async (req, res, next) => {
         moduleId,
         answers,
       });
+
+      // update the learning progress only if the user has not answered the quiz before
+      if (learning.progress < 100) {
+        // Calculate new progress and ensure it doesn't exceed 100
+        learning.progress = Math.min(
+          100,
+          learning.progress + 100 / content.modules.length,
+        );
+        isLearningUpdated = true;
+      }
     }
 
     // calculate the score
@@ -495,19 +507,15 @@ const answerCourseQuiz = async (req, res, next) => {
     }
 
     quizAnswers.score = score;
-    quizAnswers.status = score >= quizAnswers.length / 2 ? "pass" : "fail";
+    quizAnswers.status = score >= quizArray.length / 2 ? "pass" : "fail";
 
-    await quizAnswers.save();
-
-    // update the learning progress only if the user has not answered the quiz before
-    if (learning.progress < 100) {
-      // Calculate new progress and ensure it doesn't exceed 100
-      learning.progress = Math.min(
-        100,
-        learning.progress + 100 / content.modules.length,
-      );
-      await learning.save();
+    const promises = [quizAnswers.save()];
+    if (isLearningUpdated) {
+      promises.push(learning.save());
     }
+
+    // Attempt saving everything simultaneously
+    await Promise.all(promises);
 
     res.status(201).json({
       status: "success",
