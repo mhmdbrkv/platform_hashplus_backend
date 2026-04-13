@@ -6,6 +6,47 @@ import Learning from "../models/learning.model.js";
 
 //------------------------ ALL ------------------------//
 
+const getMyModuleForInstructor = async (req, res, next) => {
+  try {
+    const { instructor } = req.user._id;
+    const { moduleId } = req.params;
+    const { contentId } = req.params;
+
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return next(
+        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    if (!mongoose.isValidObjectId(contentId)) {
+      return next(
+        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
+      );
+    }
+
+    const content = await Content.findOne({ _id: contentId, instructor });
+
+    if (!content) {
+      return next(new ApiError("No content found with this id.", 404));
+    }
+
+    const module = content.modules.id(moduleId);
+
+    if (!module) {
+      return next(new ApiError("No module found with this id.", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Module Fetched Successfuly!",
+      module,
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error fetching module.", 400));
+  }
+};
+
 const getOneModule = async (req, res, next) => {
   try {
     const { moduleId } = req.params;
@@ -698,6 +739,7 @@ const removeOneBootcampModule = async (req, res, next) => {
 };
 
 export {
+  getMyModuleForInstructor,
   getOneModule,
   addCourseModule,
   updateOneCourseModule,
