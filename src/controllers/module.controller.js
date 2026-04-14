@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { Content, Course, Bootcamp } from "../models/content.model.js";
-import CourseQuizAnswers from "../models/quizAnswers.model.js";
+import {
+  UserAnswersModel,
+  CourseQuizAnswers,
+} from "../models/userAnswers.model.js";
 import Learning from "../models/learning.model.js";
 import { updateLearningProgress } from "../utils/updateLearningProgress.js";
 
@@ -189,6 +192,7 @@ const addCourseModule = async (req, res, next) => {
         dataObj = {
           link: {
             url: linkData.url,
+            date: linkData.date,
           },
         };
         break;
@@ -360,7 +364,7 @@ const removeOneCourseModule = async (req, res, next) => {
   }
 };
 
-const answerCourseQuiz = async (req, res, next) => {
+const answerCourseModule = async (req, res, next) => {
   try {
     const { contentId } = req.params;
     const { moduleId } = req.params;
@@ -395,10 +399,6 @@ const answerCourseQuiz = async (req, res, next) => {
       return next(new ApiError("No module found with this id.", 404));
     }
 
-    if (module.moduleType !== "quiz") {
-      return next(new ApiError("Module is not a quiz module.", 400));
-    }
-
     // check if the content is in learning model
     const learning = await Learning.findOne({
       user: req.user._id,
@@ -410,74 +410,81 @@ const answerCourseQuiz = async (req, res, next) => {
       return next(new ApiError("You are not enrolled in this course.", 400));
     }
 
-    // check the questions in the module and compare with the questions in the answers
-    const quizArray = module.quiz;
+    // check the module type
+    if (module.moduleType === "quiz") {
+      // check the questions in the module and compare with the questions in the answers
+      const quizArray = module.quiz;
 
-    for (const quiz of quizArray) {
-      if (
-        !answers.some(
+      for (const quiz of quizArray) {
+        if (
+          !answers.some(
+            (answer) =>
+              typeof answer.question === "string" &&
+              answer.question.toLowerCase().trim() ===
+                quiz.question.toLowerCase().trim(),
+          )
+        ) {
+          return next(new ApiError("Please answer all the questions.", 400));
+        }
+      }
+
+      // check if the user has already answered the quiz
+      let quizAnswers = await CourseQuizAnswers.findOne({
+        user: req.user._id,
+        content: contentId,
+        moduleId,
+      });
+
+      if (quizAnswers) {
+        quizAnswers.answers = answers;
+      } else {
+        quizAnswers = new CourseQuizAnswers({
+          moduleType: "quiz",
+          user: req.user._id,
+          content: contentId,
+          moduleId,
+          answers,
+        });
+      }
+
+      // calculate the score
+      let score = 0;
+      for (const quiz of quizArray) {
+        const answer = answers.find(
           (answer) =>
             typeof answer.question === "string" &&
             answer.question.toLowerCase().trim() ===
               quiz.question.toLowerCase().trim(),
-        )
-      ) {
-        return next(new ApiError("Please answer all the questions.", 400));
+        );
+        if (
+          answer &&
+          answer.answer.toLowerCase().trim() ===
+            quiz.answer.toLowerCase().trim()
+        ) {
+          score += 1;
+        }
       }
-    }
 
-    // check if the user has already answered the quiz
-    let quizAnswers = await CourseQuizAnswers.findOne({
-      user: req.user._id,
-      content: contentId,
-      moduleId,
-    });
+      quizAnswers.score = score;
+      quizAnswers.status = score >= quizArray.length / 2 ? "pass" : "fail";
 
-    if (quizAnswers) {
-      quizAnswers.answers = answers;
-    } else {
-      quizAnswers = new CourseQuizAnswers({
-        user: req.user._id,
-        content: contentId,
-        moduleId,
-        answers,
+      await quizAnswers.save();
+
+      res.status(201).json({
+        status: "success",
+        message: "Answers saved successfully!",
+        data: quizAnswers,
       });
+    } else {
+      return next(new ApiError("Module type is not valid.", 400));
     }
-
-    // calculate the score
-    let score = 0;
-    for (const quiz of quizArray) {
-      const answer = answers.find(
-        (answer) =>
-          typeof answer.question === "string" &&
-          answer.question.toLowerCase().trim() ===
-            quiz.question.toLowerCase().trim(),
-      );
-      if (
-        answer &&
-        answer.answer.toLowerCase().trim() === quiz.answer.toLowerCase().trim()
-      ) {
-        score += 1;
-      }
-    }
-
-    quizAnswers.score = score;
-    quizAnswers.status = score >= quizArray.length / 2 ? "pass" : "fail";
-
-    await quizAnswers.save();
-
-    res.status(201).json({
-      status: "success",
-      message: "Quiz answers saved successfully!",
-      data: quizAnswers,
-    });
   } catch (error) {
     console.error(error);
-    next(new ApiError("Error saving quiz answers.", 400));
+    next(new ApiError("Error saving answers.", 400));
   }
 };
 
-const getCourseQuizAnswers = async (req, res, next) => {
+const getCourseModuleAnswers = async (req, res, next) => {
   try {
     const { contentId } = req.params;
     const { moduleId } = req.params;
@@ -494,28 +501,26 @@ const getCourseQuizAnswers = async (req, res, next) => {
       );
     }
 
-    const quizAnswers = await CourseQuizAnswers.findOne({
+    const userAnswers = await UserAnswersModel.findOne({
       user: req.user._id,
       content: contentId,
       moduleId,
     });
 
-    if (!quizAnswers) {
+    if (!userAnswers) {
       return next(new ApiError("No quiz answers found with this id.", 404));
     }
 
     res.status(200).json({
       status: "success",
       message: "Quiz answers fetched successfully!",
-      data: quizAnswers,
+      data: userAnswers,
     });
   } catch (error) {
     console.error(error);
     next(new ApiError("Error fetching quiz answers.", 400));
   }
 };
-
-// TODO: Add Instructor Quiz Check
 
 //------------------------ BOOTCAMP ------------------------//
 
@@ -757,6 +762,6 @@ export {
   addBootcampModule,
   updateOneBootcampModule,
   removeOneBootcampModule,
-  answerCourseQuiz,
-  getCourseQuizAnswers,
+  answerCourseModule,
+  getCourseModuleAnswers,
 };

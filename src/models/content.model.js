@@ -184,6 +184,7 @@ const taskModuleSchema = new mongoose.Schema({
 const linkModuleSchema = new mongoose.Schema({
   link: {
     url: { type: String, default: "", trim: true },
+    date: { type: Date, required: true },
     _id: false,
   },
 });

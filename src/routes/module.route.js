@@ -9,8 +9,8 @@ import {
   addBootcampModule,
   updateOneBootcampModule,
   removeOneBootcampModule,
-  answerCourseQuiz,
-  getCourseQuizAnswers,
+  answerCourseModule,
+  getCourseModuleAnswers,
 } from "../controllers/module.controller.js";
 
 import {
@@ -31,19 +31,19 @@ router.get("/:moduleId", getOneModule); // One Module Route (Public) For develop
 router.get("/:moduleId/course", checkSubscription, getOneModule); // Course Modules Route (Private)
 router.get("/:moduleId/bootcamp", checkBootCampSubscription, getOneModule); // Bootcamp Modules Route (Private)
 
-// Course Quiz Routes
+// Course Answer Module Routes
 router.patch(
-  "/:moduleId/course-quiz",
+  "/:moduleId/course-answer",
   allowedTo("user"),
   checkSubscription,
-  answerCourseQuiz,
+  answerCourseModule,
 );
 
 router.get(
-  "/:moduleId/course-quiz",
+  "/:moduleId/course-answer",
   allowedTo("user"),
   checkSubscription,
-  getCourseQuizAnswers,
+  getCourseModuleAnswers,
 );
 
 router.use(allowedTo("admin", "instructor"));
