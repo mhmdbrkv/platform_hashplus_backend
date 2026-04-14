@@ -71,14 +71,14 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, trim: true },
 
     languages: {
-      type: [{ language: String, proficiency: String }],
+      type: [{ language: String, proficiency: String, _id: false }],
       default: [],
     },
 
     skills: { type: [String], default: [] },
 
     links: {
-      type: [{ name: String, url: String }],
+      type: [{ name: String, url: String, _id: false }],
       default: [],
     },
 
@@ -96,6 +96,7 @@ const userSchema = new mongoose.Schema(
           skills: { type: [String], default: [] },
           description: String,
           isCurrent: { type: Boolean, default: false },
+          _id: false,
         },
       ],
       default: [],
@@ -111,6 +112,7 @@ const userSchema = new mongoose.Schema(
           endDate: Date,
           description: String,
           isCurrent: { type: Boolean, default: false },
+          _id: false,
         },
       ],
       default: [],
