@@ -10,7 +10,7 @@ import {
 
 import { guard, allowedTo } from "../middleware/auth.middleware.js";
 
-router.use(guard, allowedTo("user"));
+router.use(guard, allowedTo("student"));
 
 router.get("/", getMyLearning);
 router.post("/:contentId", addToMyLearning);

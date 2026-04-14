@@ -34,14 +34,14 @@ router.get("/:moduleId/bootcamp", checkBootCampSubscription, getOneModule); // B
 // Course Answer Module Routes
 router.patch(
   "/:moduleId/course-answer",
-  allowedTo("user"),
+  allowedTo("student"),
   checkSubscription,
   answerCourseModule,
 );
 
 router.get(
   "/:moduleId/course-answer",
-  allowedTo("user"),
+  allowedTo("student"),
   checkSubscription,
   getCourseModuleAnswers,
 );

@@ -35,13 +35,13 @@ router.delete("/:contentId", allowedTo("admin", "instructor"), deleteContent);
 
 router.patch(
   "/:contentId/final-project/course",
-  allowedTo("user"),
+  allowedTo("student"),
   checkSubscription,
   completeFinalProject,
 );
 router.patch(
   "/:contentId/final-project/bootcamp",
-  allowedTo("user"),
+  allowedTo("student"),
   checkBootCampSubscription,
   completeFinalProject,
 );

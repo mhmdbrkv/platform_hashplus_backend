@@ -6,7 +6,7 @@ import { guard, allowedTo } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(guard, allowedTo("user"));
+router.use(guard, allowedTo("student"));
 
 router.patch("/cancel", cancelSubscription);
 

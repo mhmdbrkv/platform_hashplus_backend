@@ -7,6 +7,7 @@ import moduleRoutes from "./module.route.js";
 import uploadRoutes from "./upload.route.js";
 import subscriptionRoutes from "./subscription.route.js";
 import learningRoutes from "./learning.route.js";
+import dashboardRoutes from "./dashboard.route.js";
 
 export default (app) => {
   app.use("/api/v1/auth", authRoutes);
@@ -18,4 +19,5 @@ export default (app) => {
   app.use("/api/v1/uploads", uploadRoutes);
   app.use("/api/v1/subscriptions", subscriptionRoutes);
   app.use("/api/v1/learning", learningRoutes);
+  app.use("/api/v1/dashboard", dashboardRoutes);
 };
