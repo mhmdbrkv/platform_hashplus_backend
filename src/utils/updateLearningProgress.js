@@ -6,7 +6,9 @@ export const updateLearningProgress = async (learning, content, moduleId) => {
       // Calculate new progress and ensure it doesn't exceed 100
       learning.progress = Math.min(
         100,
-        (learning.modulesCompleted.length / content.modules.length) * 100,
+        Math.floor(
+          learning.modulesCompleted.length / (content.modules.length + 1),
+        ) * 100, // +1 for the final project
       );
     }
   }
