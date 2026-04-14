@@ -39,6 +39,8 @@ const studentDetailsSchema = new mongoose.Schema(
 
     certificates: [
       {
+        name: String,
+        description: String,
         contentId: { type: mongoose.Schema.Types.ObjectId, ref: "Content" },
         certificateUrl: String,
         issuedAt: { type: Date, default: Date.now },

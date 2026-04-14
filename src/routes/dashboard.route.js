@@ -4,22 +4,18 @@ const router = express.Router();
 import {
   getAllUsers,
   toggleUserIsActive,
-  createStudent,
-  getAllStudents,
-  getStudentById,
+  createUser,
+  getUserById,
 } from "../controllers/dashboard.controller.js";
 
 import { guard, allowedTo } from "../middleware/auth.middleware.js";
 
 router.use(guard, allowedTo("admin"));
 
-// Users (students, instructors, admins)
-router.get("/all-users", getAllUsers);
-router.patch("/toggle-user-active/:userId", toggleUserIsActive);
-
-// Students
-router.post("/students", createStudent);
-router.get("/students", getAllStudents);
-router.get("/students/:studentId", getStudentById);
+// Users
+router.post("/users", createUser);
+router.get("/users", getAllUsers);
+router.get("/users/:userId", getUserById);
+router.patch("/users/:userId/active", toggleUserIsActive);
 
 export default router;
