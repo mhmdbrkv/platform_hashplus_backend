@@ -3,47 +3,9 @@ import bcrypt from "bcrypt";
 
 const instructorDetailsSchema = new mongoose.Schema(
   {
-    bio: { type: String, trim: true, default: "" },
     teachingStyle: { type: String, trim: true, default: "" },
     videoProfessionality: { type: String, trim: true, default: "" },
     targetAudience: { type: String, trim: true, default: "" },
-    skills: { type: [String], default: [] },
-    languages: {
-      type: [{ language: String, proficiency: String }],
-      default: [],
-    },
-    experience: {
-      type: [
-        {
-          company: String,
-          country: String,
-          city: String,
-          jobTitle: String,
-          jobType: String,
-          jobStyle: String,
-          startDate: Date,
-          endDate: Date,
-          skills: { type: [String], default: [] },
-          description: String,
-          isCurrent: { type: Boolean, default: false },
-        },
-      ],
-      default: [],
-    },
-    education: {
-      type: [
-        {
-          institution: String,
-          degree: String,
-          major: String,
-          startDate: Date,
-          endDate: Date,
-          description: String,
-          isCurrent: { type: Boolean, default: false },
-        },
-      ],
-      default: [],
-    },
 
     rating: { type: Number, min: 0, max: 5 },
     createdContent: [{ type: mongoose.Schema.Types.ObjectId, ref: "Content" }],
@@ -60,7 +22,21 @@ const instructorDetailsSchema = new mongoose.Schema(
 
 const studentDetailsSchema = new mongoose.Schema(
   {
-    bio: { type: String, trim: true },
+    projects: {
+      type: [
+        {
+          title: String,
+          description: String,
+          roleInProject: String,
+          skillsUsed: { type: [String], default: [] },
+          startDate: Date,
+          endDate: Date,
+          projectImageUrls: [String],
+        },
+      ],
+      default: [],
+    },
+
     certificates: [
       {
         contentId: { type: mongoose.Schema.Types.ObjectId, ref: "Content" },
@@ -90,6 +66,54 @@ const userSchema = new mongoose.Schema(
       public_id: String,
       url: String,
       uploadedAt: Date,
+    },
+
+    bio: { type: String, trim: true },
+
+    languages: {
+      type: [{ language: String, proficiency: String }],
+      default: [],
+    },
+
+    skills: { type: [String], default: [] },
+
+    links: {
+      type: [{ name: String, url: String }],
+      default: [],
+    },
+
+    experience: {
+      type: [
+        {
+          company: String,
+          country: String,
+          city: String,
+          jobTitle: String,
+          jobType: String,
+          jobStyle: String,
+          startDate: Date,
+          endDate: Date,
+          skills: { type: [String], default: [] },
+          description: String,
+          isCurrent: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
+
+    education: {
+      type: [
+        {
+          institution: String,
+          degree: String,
+          major: String,
+          startDate: Date,
+          endDate: Date,
+          description: String,
+          isCurrent: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
     },
 
     instructorDetails: { type: instructorDetailsSchema, default: () => ({}) },

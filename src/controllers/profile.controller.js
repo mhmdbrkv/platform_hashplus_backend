@@ -214,58 +214,13 @@ const changePassword = async (req, res, next) => {
   });
 };
 
-// Get All User Profiles
-const getAllProfiles = async (req, res, next) => {
-  try {
-    const users = await User.find().select("-password").lean();
-
-    res.status(200).json({
-      status: "success",
-      message: "تم جلب جميع الملفات الشخصية بنجاح",
-      length: users.length,
-      data: users,
-    });
-  } catch (error) {
-    console.error("Error in getAllProfiles:", error);
-    return next(new ApiError("حدث خطأ اثناء جلب جميع الملفات الشخصية", 500));
-  }
-};
-
-// Toggle User isActive Status (Admin Only)
-const toggleUserIsActive = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-
-    const user = await User.findById(userId).select("isActive");
-    if (!user) return next(new ApiError("User not found", 404));
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { isActive: !user.isActive },
-      { new: true, select: "-password" },
-    ).lean();
-
-    res.status(200).json({
-      status: "success",
-      message: "Profile updated successfully",
-      data: updatedUser,
-    });
-  } catch (error) {
-    console.error("Error toggling user active status:", error);
-    return next(
-      new ApiError(`Error toggling user active: ${error.message}`, 500),
-    );
-  }
-};
-
 export {
   getMyProfile,
-  getAllProfiles,
   updateMyProfile,
   deleteMyProfile,
+  changePassword,
+
   // uploadMyProfileImage,
   // deleteMyProfileImage,
-  toggleUserIsActive,
   // getMyProfileImage,
-  changePassword,
 };
