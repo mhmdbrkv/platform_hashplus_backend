@@ -9,6 +9,7 @@ import {
   getAllContent,
   getContentById,
 } from "../controllers/dashboard.controller.js";
+import { createContent } from "../controllers/content.controller.js";
 
 import { guard, allowedTo } from "../middleware/auth.middleware.js";
 
@@ -21,6 +22,7 @@ router.get("/users/:userId", getUserById);
 router.patch("/users/:userId/active", toggleUserIsActive);
 
 // Content
+router.post("/content", createContent);
 router.get("/content", getAllContent);
 router.get("/content/:contentId", getContentById);
 

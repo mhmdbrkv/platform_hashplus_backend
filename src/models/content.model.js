@@ -86,6 +86,8 @@ const contentSchema = new mongoose.Schema(
     welcomeVideo: {
       url: { type: String, default: "" },
       key: { type: String, default: "" },
+      size: { type: Number, default: 0 },
+      duration: { type: Number, default: 0 },
       uploadedAt: Date,
       _id: false,
     },

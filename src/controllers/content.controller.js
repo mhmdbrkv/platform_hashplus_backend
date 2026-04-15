@@ -137,6 +137,30 @@ const createContent = async (req, res, next) => {
       );
     }
 
+    if (welcomeVideo) {
+      if (
+        !welcomeVideo.url ||
+        !welcomeVideo.key ||
+        !welcomeVideo.size ||
+        !welcomeVideo.duration
+      ) {
+        return next(
+          new ApiError(
+            "Welcome Video url and key and size and duration are required in welcomeVideo",
+            400,
+          ),
+        );
+      }
+    }
+
+    if (thumbnail) {
+      if (!thumbnail.url || !thumbnail.key) {
+        return next(
+          new ApiError("Thumbnail url and key are required in thumbnail", 400),
+        );
+      }
+    }
+
     const newContent = await Content.create({
       title: `${title}`.trim(),
       slug,
@@ -152,8 +176,10 @@ const createContent = async (req, res, next) => {
       language,
       materials,
       price: finalPrice,
-      thumbnail: null,
-      welcomeVideo: null,
+      thumbnail: thumbnail || null,
+      welcomeVideo: welcomeVideo
+        ? { ...welcomeVideo, uploadedAt: new Date() }
+        : null,
       finalProject,
       startDate:
         contentType === "bootcamp" && startDate ? new Date(startDate) : null,
