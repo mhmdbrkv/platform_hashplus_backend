@@ -9,7 +9,7 @@ const MONGODB_URI = process.env.MONGODB_URI || "";
 const NODE_ENV = process.env.NODE_ENV || "development";
 const REDIS_HOST = process.env.REDIS_HOST || "127.0.0.1";
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
-const REDIS_URL = process.env.REDIS_URL || "";
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || "";
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || "";
 

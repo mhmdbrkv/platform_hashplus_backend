@@ -1,16 +1,14 @@
-import { Redis } from "@upstash/redis";
+import { Redis } from "ioredis";
 
-import { UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN } from "./env.js";
+import { REDIS_URL } from "./env.js";
 
-const appRedis = new Redis({
-  url: UPSTASH_REDIS_REST_URL,
-  token: UPSTASH_REDIS_REST_TOKEN,
+const appRedis = new Redis(REDIS_URL, {
+  maxRetriesPerRequest: 3,
 });
 
-// Test connectivity at startup
-appRedis
-  .ping()
-  .then(() => console.log("✅ App Redis connected"))
-  .catch((err) => console.error("❌ App Redis error:", err.message));
+appRedis.on("connect", () => console.log("✅ App Redis connected"));
+appRedis.on("error", (err) =>
+  console.error("❌ App Redis error:", err.message),
+);
 
 export { appRedis };
