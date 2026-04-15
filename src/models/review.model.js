@@ -33,7 +33,7 @@ reviewSchema.pre(/^find/, function () {
     this.populate([
       {
         path: "user",
-        select: "name",
+        select: "name email",
       },
       {
         path: "content",

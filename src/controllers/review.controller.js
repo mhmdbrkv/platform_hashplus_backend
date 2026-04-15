@@ -76,7 +76,7 @@ const getReview = async (req, res, next) => {
 
 const createReview = async (req, res, next) => {
   try {
-    const { rating, review, user, content } = req.body;
+    const { rating, review, content } = req.body;
 
     if (!mongoose.isValidObjectId(content)) {
       return next(
@@ -84,16 +84,19 @@ const createReview = async (req, res, next) => {
       );
     }
 
-    if (!mongoose.isValidObjectId(user)) {
-      return next(
-        new ApiError("user param is not a valid mongoose ObjectId!", 400),
-      );
+    const reviewExists = await Review.findOne({
+      user: req.user._id,
+      content,
+    });
+
+    if (reviewExists) {
+      return next(new ApiError("You have already reviewed this content", 400));
     }
 
     const newReview = await Review.create({
       rating,
       review,
-      user,
+      user: req.user._id,
       content,
     });
 

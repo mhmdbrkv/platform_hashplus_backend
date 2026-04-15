@@ -43,6 +43,24 @@ const learningSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// mongoose query middleware for populating the `user` field
+learningSchema.pre(/^find/, function () {
+  try {
+    this.populate([
+      {
+        path: "user",
+        select: "name email",
+      },
+      {
+        path: "content",
+        select: "title",
+      },
+    ]);
+  } catch (error) {
+    throw error;
+  }
+});
+
 const Learning = mongoose.model("Learning", learningSchema);
 
 export default Learning;

@@ -1,4 +1,6 @@
+import { Content } from "../models/content.model.js";
 import Learning from "../models/learning.model.js";
+import { ApiError } from "../utils/apiError.js";
 
 const getMyLearning = async (req, res) => {
   try {
@@ -16,19 +18,28 @@ const getMyLearning = async (req, res) => {
   }
 };
 
-const addToMyLearning = async (req, res) => {
+const addToMyLearning = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const { contentId, type } = req.params;
-    const learning = await Learning.create({
+    const { contentId } = req.params;
+    const content = await Content.findById(contentId);
+    if (!content) return next(new ApiError("Content not found", 404));
+
+    const learning = await Learning.findOne({
       user: userId,
       content: contentId,
-      type,
+    });
+    if (learning) return next(new ApiError("Content already added", 400));
+
+    const newLearning = await Learning.create({
+      user: userId,
+      content: contentId,
+      type: content.contentType,
     });
     res.status(200).json({
       success: true,
       message: "data added successfully",
-      data: learning,
+      data: newLearning,
     });
   } catch (error) {
     console.log(error);

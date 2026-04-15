@@ -3,6 +3,9 @@ import User from "../models/user.model.js";
 import Learning from "../models/learning.model.js";
 import Subscription from "../models/subscription.model.js";
 import { Content } from "../models/content.model.js";
+import Review from "../models/review.model.js";
+
+//------------------------Users------------------------
 
 // Create User (Admin Only)
 const createUser = async (req, res, next) => {
@@ -237,4 +240,111 @@ const toggleUserIsActive = async (req, res, next) => {
   }
 };
 
-export { getAllUsers, toggleUserIsActive, createUser, getUserById };
+//------------------------Content------------------------
+
+// Get All Content (Admin Only)
+const getAllContent = async (req, res, next) => {
+  try {
+    const { contentType } = req.query || {};
+    const content = await Content.find(
+      contentType ? { contentType } : {},
+    ).lean();
+
+    res.status(200).json({
+      status: "success",
+      message: "تم جلب جميع المحتوى بنجاح",
+      length: content.length,
+      data: content,
+    });
+  } catch (error) {
+    console.error("Error fetching all content:", error);
+    return next(
+      new ApiError(`Error fetching all content: ${error.message}`, 500),
+    );
+  }
+};
+
+// Get Content By ID (Admin Only)
+const getContentById = async (req, res, next) => {
+  try {
+    const { contentId } = req.params;
+
+    const content = await Content.findById(contentId).lean();
+    if (!content) return next(new ApiError("Content not found", 404));
+
+    const [contentLearning, contentRating] = await Promise.all([
+      Learning.find({ content: contentId }).lean(),
+      Review.find({ content: contentId }).lean(),
+    ]);
+
+    const studentsMap = {};
+
+    // Seed map with learning data (status + progress)
+    // learn.user is already populated via Learning model middleware
+    contentLearning.forEach((learn) => {
+      const userId = learn.user._id.toString();
+      studentsMap[userId] = {
+        _id: learn.user._id,
+        name: learn.user.name,
+        email: learn.user.email,
+        status: learn.status,
+        progress: learn.progress,
+        rating: null,
+        review: null,
+      };
+    });
+
+    // Merge review data into existing entries, or add new entries for review-only users
+    // review.user is already populated via Review model middleware
+    contentRating.forEach((review) => {
+      const userId = review.user._id.toString();
+      if (studentsMap[userId]) {
+        studentsMap[userId].rating = review.rating;
+        studentsMap[userId].review = review.review;
+      } else {
+        studentsMap[userId] = {
+          _id: review.user._id,
+          name: review.user.name,
+          email: review.user.email,
+          status: null,
+          progress: null,
+          rating: review.rating,
+          review: review.review,
+        };
+      }
+    });
+
+    const students = Object.values(studentsMap);
+    const totalStudents = students.length;
+    const totalCompletedStudents = contentLearning.filter(
+      (learn) => learn.status === "completed",
+    ).length;
+    const totalInProgressStudents = contentLearning.filter(
+      (learn) => learn.status === "in-progress",
+    ).length;
+
+    res.status(200).json({
+      status: "success",
+      message: "تم جلب المحتوى بنجاح",
+      data: {
+        totalStudents,
+        totalCompletedStudents,
+        totalInProgressStudents,
+        content,
+        students,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching content by ID:", error);
+    return next(new ApiError(`Error fetching content: ${error.message}`, 500));
+  }
+};
+
+export {
+  getAllUsers,
+  toggleUserIsActive,
+  createUser,
+  getUserById,
+  getAllContent,
+  getContentById,
+};

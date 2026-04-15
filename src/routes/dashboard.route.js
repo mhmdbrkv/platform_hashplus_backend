@@ -6,6 +6,8 @@ import {
   toggleUserIsActive,
   createUser,
   getUserById,
+  getAllContent,
+  getContentById,
 } from "../controllers/dashboard.controller.js";
 
 import { guard, allowedTo } from "../middleware/auth.middleware.js";
@@ -17,5 +19,9 @@ router.post("/users", createUser);
 router.get("/users", getAllUsers);
 router.get("/users/:userId", getUserById);
 router.patch("/users/:userId/active", toggleUserIsActive);
+
+// Content
+router.get("/content", getAllContent);
+router.get("/content/:contentId", getContentById);
 
 export default router;
