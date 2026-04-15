@@ -5,6 +5,105 @@ import Subscription from "../models/subscription.model.js";
 import { Content } from "../models/content.model.js";
 import Review from "../models/review.model.js";
 
+//------------------------Dashboard------------------------
+
+// Get Dashboard Stats
+const getDashboardStats = async (req, res, next) => {
+  try {
+    const usersCount = await User.countDocuments();
+    const contentCount = await Content.countDocuments();
+    const reviewsCount = await Review.countDocuments();
+    const learningCount = await Learning.countDocuments();
+    const subscriptionsCount = await Subscription.countDocuments();
+
+    res.status(200).json({
+      status: "success",
+      message: "تم جلب إحصائيات لوحة التحكم بنجاح",
+      data: {
+        usersCount,
+        contentCount,
+        reviewsCount,
+        learningCount,
+        subscriptionsCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    return next(new ApiError("حدث خطأ اثناء جلب إحصائيات لوحة التحكم", 500));
+  }
+};
+
+// Get Dashboard Analytics
+const getDashboardAnalytics = async (req, res, next) => {
+  try {
+    const usersByRole = await User.aggregate([
+      {
+        $group: {
+          _id: "$role",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const contentByType = await Content.aggregate([
+      {
+        $group: {
+          _id: "$contentType",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const reviewsByContent = await Review.aggregate([
+      {
+        $group: {
+          _id: "$content",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $limit: 10,
+      },
+    ]);
+
+    const learningByContent = await Learning.aggregate([
+      {
+        $group: {
+          _id: "$content",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $limit: 10,
+      },
+    ]);
+
+    const subscriptionsByType = await Subscription.aggregate([
+      {
+        $group: {
+          _id: "$type",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      status: "success",
+      message: "تم جلب تحليلات لوحة التحكم بنجاح",
+      data: {
+        usersByRole,
+        contentByType,
+        reviewsByContent,
+        learningByContent,
+        subscriptionsByType,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard analytics:", error);
+    return next(new ApiError("حدث خطأ اثناء جلب تحليلات لوحة التحكم", 500));
+  }
+};
+
 //------------------------Users------------------------
 
 // Create User (Admin Only)
@@ -282,45 +381,49 @@ const getContentById = async (req, res, next) => {
     // Seed map with learning data (status + progress)
     // learn.user is already populated via Learning model middleware
     contentLearning.forEach((learn) => {
-      const userId = learn.user._id.toString();
-      studentsMap[userId] = {
-        _id: learn.user._id,
-        name: learn.user.name,
-        email: learn.user.email,
-        status: learn.status,
-        progress: learn.progress,
-        rating: null,
-        review: null,
-      };
+      if (learn.user.isSubscribed) {
+        const userId = learn.user._id.toString();
+        studentsMap[userId] = {
+          _id: learn.user._id,
+          name: learn.user.name,
+          email: learn.user.email,
+          status: learn.status,
+          progress: learn.progress,
+          rating: null,
+          review: null,
+        };
+      }
     });
 
     // Merge review data into existing entries, or add new entries for review-only users
     // review.user is already populated via Review model middleware
     contentRating.forEach((review) => {
-      const userId = review.user._id.toString();
-      if (studentsMap[userId]) {
-        studentsMap[userId].rating = review.rating;
-        studentsMap[userId].review = review.review;
-      } else {
-        studentsMap[userId] = {
-          _id: review.user._id,
-          name: review.user.name,
-          email: review.user.email,
-          status: null,
-          progress: null,
-          rating: review.rating,
-          review: review.review,
-        };
+      if (review.user.isSubscribed) {
+        const userId = review.user._id.toString();
+        if (studentsMap[userId]) {
+          studentsMap[userId].rating = review.rating;
+          studentsMap[userId].review = review.review;
+        } else {
+          studentsMap[userId] = {
+            _id: review.user._id,
+            name: review.user.name,
+            email: review.user.email,
+            status: null,
+            progress: null,
+            rating: review.rating,
+            review: review.review,
+          };
+        }
       }
     });
 
     const students = Object.values(studentsMap);
     const totalStudents = students.length;
     const totalCompletedStudents = contentLearning.filter(
-      (learn) => learn.status === "completed",
+      (learn) => learn.status === "completed" && learn.user.isSubscribed,
     ).length;
     const totalInProgressStudents = contentLearning.filter(
-      (learn) => learn.status === "in-progress",
+      (learn) => learn.status === "in-progress" && learn.user.isSubscribed,
     ).length;
 
     res.status(200).json({
@@ -347,4 +450,6 @@ export {
   getUserById,
   getAllContent,
   getContentById,
+  getDashboardStats,
+  getDashboardAnalytics,
 };

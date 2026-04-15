@@ -49,7 +49,7 @@ learningSchema.pre(/^find/, function () {
     this.populate([
       {
         path: "user",
-        select: "name email",
+        select: "name email isSubscribed",
       },
       {
         path: "content",

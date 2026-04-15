@@ -8,12 +8,18 @@ import {
   getUserById,
   getAllContent,
   getContentById,
+  getDashboardStats,
+  getDashboardAnalytics,
 } from "../controllers/dashboard.controller.js";
 import { createContent } from "../controllers/content.controller.js";
 
 import { guard, allowedTo } from "../middleware/auth.middleware.js";
 
 router.use(guard, allowedTo("admin"));
+
+// Dashboard
+router.get("/", getDashboardStats);
+router.get("/analytics", getDashboardAnalytics);
 
 // Users
 router.post("/users", createUser);
