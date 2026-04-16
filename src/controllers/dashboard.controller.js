@@ -20,21 +20,106 @@ const getDashboardStats = async (req, res, next) => {
       contentType: "bootcamp",
     });
     const contentCount = coursesCount + bootcampsCount;
-    const learningCount = await Learning.countDocuments();
-    const subscriptionsCount = await Subscription.countDocuments();
 
     const students = await User.find({ role: "student" })
       .select("-password")
-      .sort({ createdAt: -1 })
       .limit(10);
     const instructors = await User.find({ role: "instructor" })
       .select("-password")
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // accourdnig to learning
-    // const topStudentsByLearning;
-    // const popularInstructors;
+    // Most students in learning
+    const topStudentsByLearning = await Learning.aggregate([
+      {
+        $group: {
+          _id: "$user",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "student",
+        },
+      },
+      {
+        $unwind: {
+          path: "$student",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          studentId: "$_id",
+          name: "$student.name",
+          email: "$student.email",
+          count: 1,
+        },
+      },
+    ]);
+
+    // Most popular instructors that students learn from them
+    const popularInstructors = await Learning.aggregate([
+      {
+        $lookup: {
+          from: "contents",
+          localField: "content",
+          foreignField: "_id",
+          as: "contentDoc",
+        },
+      },
+      {
+        $unwind: {
+          path: "$contentDoc",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $group: {
+          _id: "$contentDoc.instructor",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "instructor",
+        },
+      },
+      {
+        $unwind: {
+          path: "$instructor",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          instructorId: "$_id",
+          name: "$instructor.name",
+          email: "$instructor.email",
+          count: 1,
+        },
+      },
+    ]);
 
     res.status(200).json({
       status: "success",
@@ -43,11 +128,13 @@ const getDashboardStats = async (req, res, next) => {
         contentCount,
         coursesCount,
         bootcampsCount,
-        learningCount,
-        subscriptionsCount,
         usersCount,
+        studentsCount,
+        instructorsCount,
         students,
         instructors,
+        topStudentsByLearning,
+        popularInstructors,
       },
     });
   } catch (error) {
