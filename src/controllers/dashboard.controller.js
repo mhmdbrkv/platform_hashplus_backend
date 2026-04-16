@@ -29,19 +29,21 @@ const getDashboardStats = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // Most students in learning
+    // Most students in learning programs by progress
     const topStudentsByLearning = await Learning.aggregate([
       {
         $group: {
           _id: "$user",
-          count: { $sum: 1 },
+          coursesCount: { $sum: 1 },
+          avgProgress: { $avg: "$progress" },
+          totalProgress: { $sum: "$progress" },
         },
       },
       {
-        $sort: { count: -1 },
+        $sort: { totalProgress: -1 },
       },
       {
-        $limit: 10,
+        $limit: 5,
       },
       {
         $lookup: {
@@ -63,7 +65,9 @@ const getDashboardStats = async (req, res, next) => {
           studentId: "$_id",
           name: "$student.name",
           email: "$student.email",
-          count: 1,
+          coursesCount: 1,
+          avgProgress: { $round: ["$avgProgress", 0] },
+          totalProgress: 1,
         },
       },
     ]);
@@ -94,7 +98,7 @@ const getDashboardStats = async (req, res, next) => {
         $sort: { count: -1 },
       },
       {
-        $limit: 10,
+        $limit: 5,
       },
       {
         $lookup: {
