@@ -10,21 +10,44 @@ import Review from "../models/review.model.js";
 // Get Dashboard Stats
 const getDashboardStats = async (req, res, next) => {
   try {
-    const usersCount = await User.countDocuments();
-    const contentCount = await Content.countDocuments();
-    const reviewsCount = await Review.countDocuments();
+    const studentsCount = await User.countDocuments({ role: "student" });
+    const instructorsCount = await User.countDocuments({ role: "instructor" });
+    const usersCount = studentsCount + instructorsCount;
+    const coursesCount = await Content.countDocuments({
+      contentType: "course",
+    });
+    const bootcampsCount = await Content.countDocuments({
+      contentType: "bootcamp",
+    });
+    const contentCount = coursesCount + bootcampsCount;
     const learningCount = await Learning.countDocuments();
     const subscriptionsCount = await Subscription.countDocuments();
+
+    const students = await User.find({ role: "student" })
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .limit(10);
+    const instructors = await User.find({ role: "instructor" })
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    // accourdnig to learning
+    // const topStudentsByLearning;
+    // const popularInstructors;
 
     res.status(200).json({
       status: "success",
       message: "تم جلب إحصائيات لوحة التحكم بنجاح",
       data: {
-        usersCount,
         contentCount,
-        reviewsCount,
+        coursesCount,
+        bootcampsCount,
         learningCount,
         subscriptionsCount,
+        usersCount,
+        students,
+        instructors,
       },
     });
   } catch (error) {
@@ -36,53 +59,52 @@ const getDashboardStats = async (req, res, next) => {
 // Get Dashboard Analytics
 const getDashboardAnalytics = async (req, res, next) => {
   try {
-    const usersByRole = await User.aggregate([
-      {
-        $group: {
-          _id: "$role",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    const coursesCount = await Content.countDocuments({
+      contentType: "course",
+    });
+    const bootcampsCount = await Content.countDocuments({
+      contentType: "bootcamp",
+    });
+    const contentCount = coursesCount + bootcampsCount;
 
-    const contentByType = await Content.aggregate([
-      {
-        $group: {
-          _id: "$contentType",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    const studentsCount = await User.countDocuments({ role: "student" });
+    const instructorsCount = await User.countDocuments({ role: "instructor" });
+    const usersCount = studentsCount + instructorsCount;
 
-    const reviewsByContent = await Review.aggregate([
+    const popularCategories = await Content.aggregate([
       {
         $group: {
-          _id: "$content",
+          _id: "$category",
           count: { $sum: 1 },
         },
       },
       {
-        $limit: 10,
+        $sort: { count: -1 },
       },
-    ]);
-
-    const learningByContent = await Learning.aggregate([
       {
-        $group: {
-          _id: "$content",
-          count: { $sum: 1 },
+        $limit: 5,
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "_id",
+          foreignField: "_id",
+          as: "category",
         },
       },
       {
-        $limit: 10,
+        $unwind: {
+          path: "$category",
+          preserveNullAndEmptyArrays: true,
+        },
       },
-    ]);
-
-    const subscriptionsByType = await Subscription.aggregate([
       {
-        $group: {
-          _id: "$type",
-          count: { $sum: 1 },
+        $project: {
+          _id: 0,
+          categoryId: "$_id",
+          name: "$category.name",
+          slug: "$category.slug",
+          count: 1,
         },
       },
     ]);
@@ -91,11 +113,13 @@ const getDashboardAnalytics = async (req, res, next) => {
       status: "success",
       message: "تم جلب تحليلات لوحة التحكم بنجاح",
       data: {
-        usersByRole,
-        contentByType,
-        reviewsByContent,
-        learningByContent,
-        subscriptionsByType,
+        contentCount,
+        coursesCount,
+        bootcampsCount,
+        usersCount,
+        studentsCount,
+        instructorsCount,
+        popularCategories,
       },
     });
   } catch (error) {
