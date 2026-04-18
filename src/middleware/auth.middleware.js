@@ -16,8 +16,6 @@ const guard = async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer ")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (req.body && req.body.token) {
-    token = req.body.token;
   }
 
   // 2) If no token is found, return an error
@@ -75,49 +73,14 @@ const guard = async (req, res, next) => {
     }
 
     // 5) Update lastLogin
-    loggedUser.lastLogin = Date.now();
+    await User.findByIdAndUpdate(loggedUser._id, {
+      lastLogin: { $set: new Date() },
+    });
 
-    // 6) Check if user has active subscription
-    if (loggedUser.isSubscribed) {
-      const subscription = await Subscription.findOne({
-        user: loggedUser._id,
-        type: "general",
-        isActive: true,
-      });
-
-      if (!subscription) {
-        loggedUser.isSubscribed = false;
-        loggedUser.subscriptionEndDate = null;
-        loggedUser.subscriptionStartDate = null;
-      } else if (
-        subscription.subscriptionDetails.subscriptionEndDate < new Date()
-      ) {
-        subscription.isActive = false;
-        loggedUser.isSubscribed = false;
-        loggedUser.subscriptionEndDate = null;
-        loggedUser.subscriptionStartDate = null;
-        await subscription.save();
-
-        // Email notification
-        const options = {
-          email: loggedUser.email,
-          subject: `بخصوص اشتراكك في هاش بلس`,
-          message: `مرحبا ${loggedUser.name},\n\nنود إعلامك بأن اشتراكك في هاش بلس قد انتهى. لمتابعة رحلة التعلم، يرجى تجديد اشتراكك.\n\nشكراً لاستخدامك هاش بلس!\n\nفريق هاش بلس`,
-        };
-
-        // send plan expiration email to newUser
-        sendEmail(options).catch((err) => {
-          console.error("Error sending plan expiration email:", err);
-        });
-      }
-    }
-
-    await loggedUser.save();
-
-    // 7) Attach the user to the request object for future middleware or routes
+    // 6) Attach the user to the request object for future middleware or routes
     req.user = loggedUser;
 
-    // 8) Continue to the next middleware or route handler
+    // 7) Continue to the next middleware or route handler
     next();
   } catch (error) {
     console.error("Token verification error:", error);

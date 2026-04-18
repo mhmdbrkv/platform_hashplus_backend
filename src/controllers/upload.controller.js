@@ -10,9 +10,9 @@ import {
 // Start Multipart Upload, Generate Pre-Signed URLs
 export const startUpload = async (req, res, next) => {
   try {
-    const { fileName, fileType, userId, partsCount } = req.body;
+    const { fileName, fileType, userId } = req.body;
 
-    partsCount = Number(partsCount);
+    const partsCount = Number(req.body.partsCount);
 
     if (!fileName || !fileType || !userId || !partsCount) {
       return next(

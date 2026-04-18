@@ -37,7 +37,7 @@ const signup = async (req, res, next) => {
 
     // generate otp
     const random = Math.floor(100000 + Math.random() * 900000).toString();
-    const otp = crypto.createHash("sha256").update(random).digest("hex");
+    const otp = await bcrypt.hash(random, 12);
 
     // update user's otp
     newUser.otpCode = otp;
@@ -199,43 +199,48 @@ const verifyOtp = async (req, res, next) => {
 
 // login
 const login = async (req, res, next) => {
-  if (req.user?.authProvider === "google") {
-    return res.status(409).json({
-      status: "failed",
-      message: `تم تسجيل الدخول من خلال حساب جوجل من قبل باستخدام  نفس البريد الاكتروني}`,
+  try {
+    if (req.user?.authProvider === "google") {
+      return res.status(409).json({
+        status: "failed",
+        message: `تم تسجيل الدخول من خلال حساب جوجل من قبل باستخدام  نفس البريد الاكتروني}`,
+      });
+    }
+
+    const { email, password } = req.body;
+
+    // find the user by email
+    const user = await User.findOne({ email });
+    if (!user || !(await user.comparePassword(password))) {
+      return next(
+        new ApiError("البريد الإلكتروني او كلمة المرور غير صحيحة", 404),
+      );
+    }
+
+    if (!user.otpIsVerified) {
+      return next(
+        new ApiError("من قبل تسجيل الدخول، يرجى التحقق من رمز OTP", 400),
+      );
+    }
+
+    // generate JWT
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    // store refresh token on redis (upstash)
+    await storeRefreshToken(user._id, refreshToken);
+
+    res.status(200).json({
+      status: "success",
+      message: "User logged in successfully",
+      data: sanitizedUser(user),
+      token: accessToken,
+      refreshToken: refreshToken,
     });
+  } catch (error) {
+    console.error("Error in login:", error);
+    next(new ApiError("حدث خطأ اثناء تسجيل الدخول", 500));
   }
-
-  const { email, password } = req.body;
-
-  // find the user by email
-  const user = await User.findOne({ email });
-  if (!user || !(await user.comparePassword(password))) {
-    return next(
-      new ApiError("البريد الإلكتروني او كلمة المرور غير صحيحة", 404),
-    );
-  }
-
-  if (!user.otpIsVerified) {
-    return next(
-      new ApiError("من قبل تسجيل الدخول، يرجى التحقق من رمز OTP", 400),
-    );
-  }
-
-  // generate JWT
-  const accessToken = generateAccessToken(user._id);
-  const refreshToken = generateRefreshToken(user._id);
-
-  // store refresh token on redis (upstash)
-  await storeRefreshToken(user._id, refreshToken);
-
-  res.status(200).json({
-    status: "success",
-    message: "User logged in successfully",
-    data: sanitizedUser(user),
-    token: accessToken,
-    refreshToken: refreshToken,
-  });
 };
 
 // googleAuth

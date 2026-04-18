@@ -237,6 +237,8 @@ const deleteContent = async (req, res, next) => {
       return next(new ApiError("Content not found", 404));
     }
 
+    // add delete cascade (Use Mongoose post-delete hooks or a transaction to clean up related documents)
+
     await Content.findByIdAndDelete(contentId);
     res.status(204).json({
       status: "success",
@@ -268,6 +270,17 @@ const completeFinalProject = async (req, res, next) => {
 
     if (!content) {
       return next(new ApiError("No course found with this id.", 404));
+    }
+
+    const existingAnswer = await FinalProjectAnswer.findOne({
+      user: req.user._id,
+      content: contentId,
+    });
+
+    if (existingAnswer) {
+      return next(
+        new ApiError("You have already submitted your final project.", 400),
+      );
     }
 
     const completeProject = await FinalProjectAnswer.create({

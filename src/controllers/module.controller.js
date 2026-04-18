@@ -12,7 +12,7 @@ import { updateLearningProgress } from "../utils/updateLearningProgress.js";
 
 const getMyModuleForInstructor = async (req, res, next) => {
   try {
-    const { instructor } = req.user._id;
+    const instructor = req.user._id;
     const { moduleId } = req.params;
     const { contentId } = req.params;
 

@@ -7,17 +7,17 @@ import {
   EMAIL_PASSWORD,
 } from "../config/env.js";
 
+const transporter = nodemailer.createTransport({
+  host: EMAIL_HOST,
+  port: EMAIL_PORT, //false-587. true-465
+  secure: false,
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASSWORD,
+  },
+});
+
 const sendEmail = async (options) => {
-  const transporter = nodemailer.createTransport({
-    host: EMAIL_HOST,
-    port: EMAIL_PORT, //false-587. true-465
-    secure: false,
-    auth: {
-      user: EMAIL_USER,
-      pass: EMAIL_PASSWORD,
-    },
-  });
-  //------------------------------------------------//
   const emailOptions = {
     from: `Hash Plus <${EMAIL_USER}>`,
     to: options.email,

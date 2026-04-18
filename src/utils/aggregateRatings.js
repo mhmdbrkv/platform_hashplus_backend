@@ -5,15 +5,15 @@ const aggregateRatings = async function (contentId, reviewModel, contentModel) {
       $group: {
         _id: "$content",
         avgRatings: { $avg: "$rating" },
-        ratingsNumber: { $sum: 1 },
+        ratingsCount: { $sum: 1 },
       },
     },
   ]);
 
   if (result.length > 0) {
     await contentModel.findByIdAndUpdate(contentId, {
-      avgRatings: result[0].avgRatings,
-      ratingsNumber: result[0].ratingsNumber,
+      "metadata.avgRatings": result[0]?.avgRatings,
+      "metadata.ratingsCount": result[0]?.ratingsCount,
     });
   }
 };

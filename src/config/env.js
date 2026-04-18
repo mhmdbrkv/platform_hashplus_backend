@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { ApiError } from "../utils/apiError.js";
 
 dotenv.config();
 
@@ -32,6 +33,79 @@ const R2_BUCKET = process.env.R2_BUCKET || "";
 
 const MOYASAR_SECRET_KEY = process.env.MOYASAR_SECRET_KEY || "";
 const MOYASAR_WEBHOOK_SECRET = process.env.MOYASAR_WEBHOOK_SECRET || "";
+
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.CLIENT_URL) {
+    throw new ApiError("CLIENT_URL must be set in production", 500);
+  }
+
+  if (!process.env.MONGODB_URI) {
+    throw new ApiError("MONGODB_URI must be set in production", 500);
+  }
+
+  if (!process.env.JWT_ACCESS_SECRET_KEY) {
+    throw new ApiError("JWT_ACCESS_SECRET_KEY must be set in production", 500);
+  }
+
+  if (!process.env.JWT_ACCESS_EXPIRE_TIME) {
+    throw new ApiError("JWT_ACCESS_EXPIRE_TIME must be set in production", 500);
+  }
+
+  if (!process.env.JWT_REFRESH_SECRET_KEY) {
+    throw new ApiError("JWT_REFRESH_SECRET_KEY must be set in production", 500);
+  }
+
+  if (!process.env.JWT_REFRESH_EXPIRE_TIME) {
+    throw new ApiError(
+      "JWT_REFRESH_EXPIRE_TIME must be set in production",
+      500,
+    );
+  }
+
+  if (!process.env.EMAIL_HOST) {
+    throw new ApiError("EMAIL_HOST must be set in production", 500);
+  }
+
+  if (!process.env.EMAIL_PORT) {
+    throw new ApiError("EMAIL_PORT must be set in production", 500);
+  }
+
+  if (!process.env.EMAIL_USER) {
+    throw new ApiError("EMAIL_USER must be set in production", 500);
+  }
+
+  if (!process.env.EMAIL_PASSWORD) {
+    throw new ApiError("EMAIL_PASSWORD must be set in production", 500);
+  }
+
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new ApiError("GOOGLE_CLIENT_ID must be set in production", 500);
+  }
+
+  if (!process.env.R2_ACCESS_KEY_ID) {
+    throw new ApiError("R2_ACCESS_KEY_ID must be set in production", 500);
+  }
+
+  if (!process.env.R2_SECRET_ACCESS_KEY) {
+    throw new ApiError("R2_SECRET_ACCESS_KEY must be set in production", 500);
+  }
+
+  if (!process.env.R2_ENDPOINT) {
+    throw new ApiError("R2_ENDPOINT must be set in production", 500);
+  }
+
+  if (!process.env.R2_BUCKET) {
+    throw new ApiError("R2_BUCKET must be set in production", 500);
+  }
+
+  if (!process.env.MOYASAR_SECRET_KEY) {
+    throw new ApiError("MOYASAR_SECRET_KEY must be set in production", 500);
+  }
+
+  if (!process.env.MOYASAR_WEBHOOK_SECRET) {
+    throw new ApiError("MOYASAR_WEBHOOK_SECRET must be set in production", 500);
+  }
+}
 
 export {
   PORT,

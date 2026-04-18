@@ -378,8 +378,8 @@ const getUserById = async (req, res, next) => {
     let data = {};
 
     if (user.role === "student") {
-      const learning = await Learning.findOne({ user: userId }).lean();
-      const subscription = await Subscription.findOne({
+      const learning = await Learning.find({ user: userId }).lean();
+      const subscription = await Subscription.find({
         user: userId,
       }).lean();
 
@@ -487,8 +487,12 @@ const getContentById = async (req, res, next) => {
     if (!content) return next(new ApiError("Content not found", 404));
 
     const [contentLearning, contentRating] = await Promise.all([
-      Learning.find({ content: contentId }).lean(),
-      Review.find({ content: contentId }).lean(),
+      Learning.find({ content: contentId })
+        .populate("user", "_id name email isSubscribed")
+        .lean(),
+      Review.find({ content: contentId })
+        .populate("user", "_id name email isSubscribed")
+        .lean(),
     ]);
 
     const studentsMap = {};

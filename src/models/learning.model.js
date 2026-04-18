@@ -44,22 +44,22 @@ const learningSchema = new mongoose.Schema(
 );
 
 // mongoose query middleware for populating the `user` field
-learningSchema.pre(/^find/, function () {
-  try {
-    this.populate([
-      {
-        path: "user",
-        select: "name email isSubscribed",
-      },
-      {
-        path: "content",
-        select: "title",
-      },
-    ]);
-  } catch (error) {
-    throw error;
-  }
-});
+// learningSchema.pre(/^find/, function () {
+//   try {
+//     this.populate([
+//       {
+//         path: "user",
+//         select: "name email isSubscribed",
+//       },
+//       {
+//         path: "content",
+//         select: "title",
+//       },
+//     ]);
+//   } catch (error) {
+//     throw error;
+//   }
+// });
 
 const Learning = mongoose.model("Learning", learningSchema);
 
