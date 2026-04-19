@@ -4,6 +4,10 @@ import { MOYASAR_WEBHOOK_SECRET, EMAIL_USER } from "../config/env.js";
 import crypto from "crypto";
 import Subscription from "../models/subscription.model.js";
 import { Bootcamp } from "../models/content.model.js";
+import {
+  activateGeneralSubscription,
+  activateBootcampSubscription,
+} from "../utils/syncSubscription.js";
 
 // handle general subscription payment
 const handleGeneralSubscriptionPayment = async (user, payment) => {
@@ -55,10 +59,8 @@ const handleGeneralSubscriptionPayment = async (user, payment) => {
       isActive: true,
     });
 
-    user.isSubscribed = true;
-    user.subscriptionStartDate = startDate;
-    user.subscriptionEndDate = endDate;
-    await user.save();
+    // activate general subscription
+    await activateGeneralSubscription(user._id, { startDate, endDate });
 
     return { startDate, endDate };
   } catch (err) {
@@ -107,10 +109,8 @@ const handleBootcampSubscriptionPayment = async (user, payment) => {
       isActive: true,
     });
 
-    if (!user.bootcamps.includes(bootcampId)) {
-      user.bootcamps.push(bootcampId);
-      await user.save();
-    }
+    // activate bootcamp subscription
+    await activateBootcampSubscription(user._id, bootcampId);
 
     return { bootcamp };
   } catch (err) {

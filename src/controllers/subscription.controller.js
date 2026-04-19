@@ -2,6 +2,10 @@ import Subscription from "../models/subscription.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { refundPayment } from "../utils/moyasarPayment.js";
+import {
+  deactivateGeneralSubscription,
+  deactivateBootcampSubscription,
+} from "../utils/syncSubscription.js";
 
 export const cancelSubscription = async (req, res, next) => {
   try {
@@ -48,18 +52,17 @@ export const cancelSubscription = async (req, res, next) => {
     }
 
     if (subscription.type === "general") {
-      req.user.isSubscribed = false;
-      req.user.subscriptionStartDate = null;
-      req.user.subscriptionEndDate = null;
-      await req.user.save();
+      // deactivate general subscription
+      await deactivateGeneralSubscription(userId, subscription._id);
     } else if (subscription.type === "bootcamp") {
-      req.user.bootcamps = req.user.bootcamps.filter(
-        (bootcamp) => bootcamp.toString() !== subscription.bootcamp.toString(),
+      // deactivate bootcamp subscription
+      await deactivateBootcampSubscription(
+        userId,
+        subscription.bootcamp,
+        subscription._id,
       );
-      await req.user.save();
     }
 
-    subscription.isActive = false;
     subscription.canceled = true;
     subscription.canceledAt = Date.now();
     await subscription.save();
