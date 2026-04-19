@@ -4,6 +4,7 @@ import { Content } from "../models/content.model.js";
 import FinalProjectAnswer from "../models/finalProjectAnswer.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
+import { cascadeDeleteContent } from "../utils/cascadeDelete.js";
 
 const getContents = async (req, res, next) => {
   try {
@@ -232,21 +233,24 @@ const deleteContent = async (req, res, next) => {
   try {
     const { contentId } = req.params;
 
-    const content = await Content.findById(contentId);
+    const content = await Content.findByIdAndDelete(contentId);
     if (!content) {
       return next(new ApiError("Content not found", 404));
     }
 
-    // add delete cascade (Use Mongoose post-delete hooks or a transaction to clean up related documents)
+    // Clean up all dependent records
+    await cascadeDeleteContent(contentId);
 
-    await Content.findByIdAndDelete(contentId);
-    res.status(204).json({
-      status: "success",
-      message: "Content deleted successfully",
+    // Also update the instructor's createdContent array
+    await User.findByIdAndUpdate(content.instructor, {
+      $pull: { "instructorDetails.createdContent": content._id },
+      $inc: { "instructorDetails.totalCreatedContent": -1 },
     });
+
+    res.status(204).end();
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError("Error deleting content", 500));
   }
 };
 
