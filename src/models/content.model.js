@@ -257,6 +257,15 @@ const bootcampSchema = new mongoose.Schema(
 );
 
 // ─────────────────────────────────────────────
+// Indexes
+// ─────────────────────────────────────────────
+
+// Dashboard and public listing filters
+contentSchema.index({ contentType: 1 });
+contentSchema.index({ category: 1 });
+contentSchema.index({ instructor: 1 });
+
+// ─────────────────────────────────────────────
 // Models
 // ─────────────────────────────────────────────
 const Content = mongoose.model("Content", contentSchema);

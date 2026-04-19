@@ -49,6 +49,8 @@ const courseQuizAnswersSchema = new mongoose.Schema({
   },
 });
 
+userAnswersSchema.index({ user: 1, content: 1, moduleId: 1 }, { unique: true });
+
 const UserAnswersModel = mongoose.model("UserAnswers", userAnswersSchema);
 
 const CourseQuizAnswers = UserAnswersModel.discriminator(

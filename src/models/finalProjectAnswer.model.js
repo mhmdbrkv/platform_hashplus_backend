@@ -23,6 +23,8 @@ finalProjectAnswerSchema.pre("save", function (next) {
   this.notes = this.notes.trim();
   next();
 });
+// Prevent duplicate answers + fast lookup
+finalProjectAnswerSchema.index({ user: 1, content: 1 }, { unique: true });
 
 const FinalProjectAnswer = mongoose.model(
   "FinalProjectAnswer",

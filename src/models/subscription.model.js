@@ -49,6 +49,17 @@ const subscriptionSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// Most common auth-guard lookup
+subscriptionSchema.index({ user: 1, type: 1, isActive: 1 });
+// Cron job: find all expired active general subscriptions
+subscriptionSchema.index({
+  "subscriptionDetails.subscriptionEndDate": 1,
+  isActive: 1,
+  type: 1,
+});
+// Webhook idempotency lookup
+subscriptionSchema.index({ "paymentDetails.paymentId": 1 }, { sparse: true });
+
 const Subscription = mongoose.model("Subscription", subscriptionSchema);
 
 export default Subscription;

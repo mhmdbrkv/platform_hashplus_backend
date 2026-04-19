@@ -45,6 +45,11 @@ const reviewSchema = new mongoose.Schema(
 //   }
 // });
 
+// Prevent duplicate reviews + fast lookup
+reviewSchema.index({ user: 1, content: 1 }, { unique: true });
+// aggregateRatings pipeline match
+reviewSchema.index({ content: 1 });
+
 const Review = mongoose.model("Review", reviewSchema);
 
 export default Review;

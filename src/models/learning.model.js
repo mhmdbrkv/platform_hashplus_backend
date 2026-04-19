@@ -61,6 +61,11 @@ const learningSchema = new mongoose.Schema(
 //   }
 // });
 
+// Compound unique — a user can only enroll once per content
+learningSchema.index({ user: 1, content: 1 }, { unique: true });
+// Cron and dashboard queries filter by status
+learningSchema.index({ status: 1 });
+
 const Learning = mongoose.model("Learning", learningSchema);
 
 export default Learning;
