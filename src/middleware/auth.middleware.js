@@ -74,9 +74,8 @@ const guard = async (req, res, next) => {
     }
 
     // 5) Update lastLogin
-    await User.findByIdAndUpdate(loggedUser._id, {
-      lastLogin: { $set: new Date() },
-    });
+    loggedUser.lastLogin = new Date();
+    await loggedUser.save();
 
     // 6) Check if user's subscription is expired
     if (loggedUser.isSubscribed && loggedUser.subscriptionEndDate) {
