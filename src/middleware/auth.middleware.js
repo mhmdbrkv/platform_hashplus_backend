@@ -73,11 +73,7 @@ const guard = async (req, res, next) => {
       }
     }
 
-    // 5) Update lastLogin
-    loggedUser.lastLogin = new Date();
-    await loggedUser.save();
-
-    // 6) Check if user's subscription is expired
+    // 5) Check if user's subscription is expired
     if (loggedUser.isSubscribed && loggedUser.subscriptionEndDate) {
       const subscriptionEndDate = new Date(loggedUser.subscriptionEndDate);
       const now = new Date();
@@ -88,10 +84,10 @@ const guard = async (req, res, next) => {
       }
     }
 
-    // 7) Attach the user to the request object for future middleware or routes
+    // 6) Attach the user to the request object for future middleware or routes
     req.user = loggedUser;
 
-    // 8) Continue to the next middleware or route handler
+    // 7) Continue to the next middleware or route handler
     next();
   } catch (error) {
     console.error("Token verification error:", error);

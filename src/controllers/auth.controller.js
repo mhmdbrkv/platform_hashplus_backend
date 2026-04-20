@@ -230,6 +230,10 @@ const login = async (req, res, next) => {
     // store refresh token on redis (upstash)
     await storeRefreshToken(user._id, refreshToken);
 
+    // update last login
+    user.lastLogin = new Date();
+    await user.save();
+
     res.status(200).json({
       status: "success",
       message: "User logged in successfully",
