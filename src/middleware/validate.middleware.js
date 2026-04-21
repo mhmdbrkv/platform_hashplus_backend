@@ -11,12 +11,14 @@ const validate = (schema) => (req, res, next) => {
     next();
   } catch (err) {
     if (err instanceof ZodError) {
-      const message = err.errors
-        .map((e) => `${e.path.slice(1).join(".")}: ${e.message}`)
-        .join(", ");
-      return next(new ApiError(message, 400));
+      console.log(err.issues);
+
+      const message = Array.isArray(err.issues)
+        ? err.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")
+        : err.message;
+      return next(new ApiError(`خطأ في البيانات المدخلة: ${message}`, 400));
     }
-    next(err);
+    next(new ApiError(`خطأ في البيانات المدخلة: ${err.message}`, 500));
   }
 };
 

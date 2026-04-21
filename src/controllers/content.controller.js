@@ -205,12 +205,56 @@ const createContent = async (req, res, next) => {
 const updateContent = async (req, res, next) => {
   try {
     const { contentId } = req.params;
-    const { title } = req.body;
+
+    const {
+      title,
+      category,
+      description,
+      learningOutcomes,
+      prerequisites,
+      welcomeMessage,
+      congratulationsMessage,
+      level,
+      language,
+      materials,
+      price,
+      thumbnail,
+      welcomeVideo,
+      finalProject,
+      startDate,
+      endDate,
+      totalProjects,
+    } = req.body || {};
     const slug = title ? slugify(title) : undefined;
+
+    if (req.user.role !== "admin" && req.user._id !== content.instructor) {
+      return next(
+        new ApiError("You are not authorized to update this content", 403),
+      );
+    }
 
     const content = await Content.findByIdAndUpdate(
       contentId,
-      { title, slug },
+      {
+        title,
+        slug,
+        category,
+        description,
+        learningOutcomes,
+        prerequisites,
+        welcomeMessage,
+        congratulationsMessage,
+        level,
+        language,
+        materials,
+        price,
+        thumbnail,
+        welcomeVideo,
+        finalProject,
+        startDate,
+        endDate,
+        totalProjects,
+      },
       { returnDocument: "after" },
     );
 

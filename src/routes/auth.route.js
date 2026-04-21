@@ -1,21 +1,6 @@
 import express from "express";
 const router = express.Router();
 
-import validate from "../middleware/validate.middleware.js";
-import {
-  signupSchema,
-  loginSchema,
-  otpSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
-} from "../validators/auth.validator.js";
-
-import {
-  loginLimiter,
-  otpLimiter,
-  passwordResetLimiter,
-} from "../middleware/rateLimit.middleware.js";
-
 import {
   signup,
   verifyOtp,
@@ -29,13 +14,30 @@ import {
   resetPassword,
 } from "../controllers/auth.controller.js";
 
+import {
+  loginLimiter,
+  otpLimiter,
+  passwordResetLimiter,
+} from "../middleware/rateLimit.middleware.js";
+
+import {
+  signupSchema,
+  loginSchema,
+  otpSchema,
+  forgotPasswordSchema,
+  verifyResetCodeSchema,
+  resetPasswordSchema,
+} from "../validators/auth.validator.js";
+
+import validate from "../middleware/validate.middleware.js";
+
 router.post("/signup", otpLimiter, validate(signupSchema), signup);
+router.post("/login", loginLimiter, validate(loginSchema), login);
 router.post("/verify-otp", otpLimiter, validate(otpSchema), verifyOtp);
 router.post("/request-otp", otpLimiter, requestOtp);
-router.post("/login", loginLimiter, validate(loginSchema), login);
-router.post("/google", loginLimiter, googleAuth);
 router.post("/logout", logout);
 router.post("/refresh-token", refreshToken);
+router.post("/google", loginLimiter, googleAuth);
 
 router.post(
   "/forgot-password",
@@ -46,7 +48,7 @@ router.post(
 router.post(
   "/verify-reset-code",
   passwordResetLimiter,
-  validate(otpSchema),
+  validate(verifyResetCodeSchema),
   verifyResetCode,
 );
 router.post(
