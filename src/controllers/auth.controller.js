@@ -44,7 +44,7 @@ const signup = async (req, res, next) => {
 
     // generate otp
     const random = Math.floor(100000 + Math.random() * 900000).toString();
-    const otp = await bcrypt.hash(random, 12);
+    const otp = crypto.createHash("sha256").update(random).digest("hex");
 
     // update user's otp
     newUser.otpCode = otp;
@@ -123,7 +123,7 @@ const requestOtp = async (req, res, next) => {
 
     // generate otp
     const random = Math.floor(100000 + Math.random() * 900000).toString();
-    const otp = await bcrypt.hash(random, 12);
+    const otp = crypto.createHash("sha256").update(random).digest("hex");
 
     // update user's otp
     user.otpCode = otp;
@@ -165,28 +165,22 @@ const requestOtp = async (req, res, next) => {
 // verify otp
 const verifyOtp = async (req, res, next) => {
   try {
-    const { otp } = req.body;
+    const { otp, email } = req.body;
 
     const user = await User.findOne({
-      _id: req.user._id,
+      email,
+      otpCode: crypto.createHash("sha256").update(otp).digest("hex"),
       otpEat: { $gt: Date.now() },
     });
 
     if (!user) {
       return next(
-        new ApiError("هذا الرمز منتهي الصلاحية. يرجى طلب رمز جديد", 400),
-      );
-    }
-
-    const code = await bcrypt.compare(otp, user.otpCode);
-
-    if (!code)
-      return next(
         new ApiError(
-          "هذا الرمز غير صالح. يرجى التحقق من رمز OTP المرسل إلى بريدك الإلكتروني",
+          "هذا الرمز غير صالح او منتهي الصلاحية. يرجى التحقق من رمز OTP المرسل إلى بريدك الإلكتروني",
           400,
         ),
       );
+    }
 
     // update user's otp
     user.otpIsVerified = true;
@@ -403,7 +397,7 @@ const forgotPassword = async (req, res, next) => {
 
   // generate reset code
   const random = Math.floor(100000 + Math.random() * 900000).toString();
-  const resetCode = await bcrypt.hash(random, 12);
+  const resetCode = crypto.createHash("sha256").update(random).digest("hex");
 
   // 3) Save the reset code in the database
   user.passResetCode = resetCode; // reset code
@@ -442,16 +436,14 @@ const verifyResetCode = async (req, res, next) => {
     const { resetCode } = req.body;
 
     const user = await User.findOne({
-      _id: req.user._id,
+      passResetCode: crypto
+        .createHash("sha256")
+        .update(resetCode)
+        .digest("hex"),
       passResetCodeEat: { $gt: Date.now() },
     });
 
     if (!user)
-      return next(new ApiError("رمز التحقق غير صالح أو منتهي الصلاحية", 400));
-
-    const code = await bcrypt.compare(resetCode, user.passResetCode);
-
-    if (!code)
       return next(new ApiError("رمز التحقق غير صالح أو منتهي الصلاحية", 400));
 
     user.passResetCodeVerified = true;
