@@ -43,7 +43,9 @@ const signup = async (req, res, next) => {
     });
 
     // generate otp
-    const random = Math.floor(100000 + Math.random() * 900000).toString();
+    const random = Math.floor(100000 + Math.random() * 900000)
+      .toString()
+      .trim();
     const otp = crypto.createHash("sha256").update(random).digest("hex");
 
     // update user's otp
@@ -122,7 +124,9 @@ const requestOtp = async (req, res, next) => {
     }
 
     // generate otp
-    const random = Math.floor(100000 + Math.random() * 900000).toString();
+    const random = Math.floor(100000 + Math.random() * 900000)
+      .toString()
+      .trim();
     const otp = crypto.createHash("sha256").update(random).digest("hex");
 
     // update user's otp
@@ -165,11 +169,13 @@ const requestOtp = async (req, res, next) => {
 // verify otp
 const verifyOtp = async (req, res, next) => {
   try {
-    const { otp, email } = req.body;
+    const { otp } = req.body;
 
     const user = await User.findOne({
-      email,
-      otpCode: crypto.createHash("sha256").update(otp).digest("hex"),
+      otpCode: crypto
+        .createHash("sha256")
+        .update(String(otp).trim())
+        .digest("hex"),
       otpEat: { $gt: Date.now() },
     });
 
@@ -396,7 +402,9 @@ const forgotPassword = async (req, res, next) => {
   if (!user) return next(new ApiError("User not found", 404));
 
   // generate reset code
-  const random = Math.floor(100000 + Math.random() * 900000).toString();
+  const random = Math.floor(100000 + Math.random() * 900000)
+    .toString()
+    .trim();
   const resetCode = crypto.createHash("sha256").update(random).digest("hex");
 
   // 3) Save the reset code in the database
@@ -438,7 +446,7 @@ const verifyResetCode = async (req, res, next) => {
     const user = await User.findOne({
       passResetCode: crypto
         .createHash("sha256")
-        .update(resetCode)
+        .update(String(resetCode).trim())
         .digest("hex"),
       passResetCodeEat: { $gt: Date.now() },
     });
