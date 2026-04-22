@@ -13,7 +13,7 @@ export const updateCategorySchema = z.object({
     .object({
       name: z.string().min(2).max(50),
     })
-    .strict(),
+    .optional(),
   params: z
     .object({
       categoryId: z.custom((value) => {

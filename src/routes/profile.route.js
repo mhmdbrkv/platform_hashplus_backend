@@ -14,13 +14,23 @@ import {
 
 import { guard } from "../middleware/auth.middleware.js";
 
+import validate from "../middleware/validate.middleware.js";
+import {
+  updateMyProfileSchema,
+  changePasswordSchema,
+} from "../validators/profile.validator.js";
+
 router.use(guard);
 
 // Logged in User Profile routes
 router.get("/", getMyProfile);
 router.delete("/", deleteMyProfile);
-router.patch("/", updateMyProfile);
-router.patch("/change-password", changePassword);
+router.patch("/", validate(updateMyProfileSchema), updateMyProfile);
+router.patch(
+  "/change-password",
+  validate(changePasswordSchema),
+  changePassword,
+);
 
 // router.get("/profileImage", getMyProfileImage);
 // router.patch("/profileImage", imageUpload, uploadMyProfileImage);

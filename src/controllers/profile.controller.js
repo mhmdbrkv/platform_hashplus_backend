@@ -7,48 +7,77 @@ import { sendEmail } from "../utils/sendEmail.js";
 
 // Get Logged In User Profile
 const getMyProfile = async (req, res, next) => {
-  const { _id } = req.user;
-  const user = await User.findById(_id).select("-password").lean();
+  try {
+    const { _id } = req.user;
+    const user = await User.findById(_id).select("-password").lean();
 
-  res.status(200).json({
-    status: "success",
-    message: "تم جلب الملف الشخصي بنجاح",
-    data: user,
-  });
+    res.status(200).json({
+      status: "success",
+      message: "تم جلب الملف الشخصي بنجاح",
+      data: user,
+    });
+  } catch (error) {
+    console.log(error);
+    next(new ApiError("حدث خطأ أثناء جلب الملف الشخصي", 500));
+  }
 };
 
 // Update Logged In User Profile
 const updateMyProfile = async (req, res, next) => {
-  const { _id } = req.user;
-  const { name } = req.body;
+  try {
+    const { _id } = req.user;
+    const {
+      name,
+      bio,
+      languages,
+      skills,
+      links,
+      experience,
+      education,
+      instructorDetails,
+      studentDetails,
+    } = req.body;
 
-  const updatedUser = await User.findByIdAndUpdate(
-    _id,
-    { name },
-    { new: true, select: "-password" },
-  ).lean();
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      {
+        name,
+        bio,
+        languages,
+        skills,
+        links,
+        experience,
+        education,
+        instructorDetails,
+        studentDetails,
+      },
+      { returnDocument: "after", select: "-password" },
+    ).lean();
 
-  res.status(200).json({
-    status: "success",
-    message: "تم تحديث الملف الشخصي بنجاح",
-    data: updatedUser,
-  });
+    res.status(200).json({
+      status: "success",
+      message: "تم تحديث الملف الشخصي بنجاح",
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("حدث خطأ أثناء تحديث الملف الشخصي", 500));
+  }
 };
 
 // Delete Logged In User Profile
 const deleteMyProfile = async (req, res, next) => {
-  const { _id } = req.user;
-
   try {
+    const { _id } = req.user;
     await User.findByIdAndDelete(_id);
 
-    return res.status(200).json({
+    return res.status(204).json({
       status: "success",
       message: "تم حذف الحساب وكل البيانات المرتبطة به بنجاح.",
     });
   } catch (error) {
-    console.error("Delete profile error:", error);
-    return next(new ApiError("حدث خطأ أثناء حذف الملف الشخصي", 500));
+    console.error(error);
+    next(new ApiError("حدث خطأ أثناء حذف الملف الشخصي", 500));
   }
 };
 
@@ -152,66 +181,50 @@ const deleteMyProfile = async (req, res, next) => {
 
 // Change Logged In User Password
 const changePassword = async (req, res, next) => {
-  const { _id } = req.user;
-  const user = await User.findById(_id);
-
-  const { currentPassword, newPassword, confirmNewPassword } = req.body;
-
-  if (!currentPassword || !newPassword || !confirmNewPassword) {
-    return next(new ApiError("All password fields are required", 400));
-  }
-
-  // check if current password is correct
-  if (!(await user.comparePassword(currentPassword))) {
-    console.warn(`Failed password change attempt for user: ${user.email}`);
-    return next(new ApiError("الباسوورد الحالي غير صحيح", 400));
-  }
-
-  // check if new password is different from current password
-  if (currentPassword === newPassword) {
-    return next(
-      new ApiError(
-        "الباسوورد الجديد متطابق الباسوورد الحالي. الرجاء استخدام باسوورد مختلف",
-        400,
-      ),
-    );
-  }
-
-  // check if new password and confirm password match
-  if (newPassword !== confirmNewPassword) {
-    return next(
-      new ApiError("الباسوورد الجديد غير متطابق مع تاكيد الباسوورد", 400),
-    );
-  }
-
-  // update the new password
-  user.password = newPassword;
-  user.passwordChangedAt = Date.now();
-  await user.save();
-
-  // generate the jwt
-  const accessToken = generateAccessToken(user._id);
-
-  // send email notification
   try {
-    await sendEmail({
-      email: user.email,
-      subject: `تم تغيير الباسوورد بنجاح`,
-      message: `Hi ${
-        user.name
-      },\n\nتم تغيير الباسوورد بنجاح.\n\nاذا لم تكن انت من قام بغيير الباسوورد, من فضلك اتصل بفريق الدعم.\n\nمع خالص التحية,\nفريق هاش بلس`,
-    });
-    console.log("Email Notification was Sent Successfully");
-  } catch (error) {
-    console.error("Error sending password change email:", error);
-  }
+    const { _id } = req.user;
+    const user = await User.findById(_id);
 
-  res.status(200).json({
-    status: "success",
-    message: "تم تغيير الباسوورد بنجاح",
-    data: sanitizedUser(user),
-    token: accessToken,
-  });
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    // check if current password is correct
+    if (!(await user.comparePassword(currentPassword))) {
+      console.warn(`Failed password change attempt for user: ${user.email}`);
+      return next(new ApiError("الباسوورد الحالي غير صحيح", 400));
+    }
+
+    // update the new password
+    user.password = newPassword;
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    // generate the jwt
+    const accessToken = generateAccessToken(user._id);
+
+    // send email notification
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: `تم تغيير الباسوورد بنجاح`,
+        message: `Hi ${
+          user.name
+        },\n\nتم تغيير الباسوورد بنجاح.\n\nاذا لم تكن انت من قام بغيير الباسوورد, من فضلك اتصل بفريق الدعم.\n\nمع خالص التحية,\nفريق هاش بلس`,
+      });
+      console.log("Email Notification was Sent Successfully");
+    } catch (error) {
+      console.error("Error sending password change email:", error);
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "تم تغيير الباسوورد بنجاح",
+      data: sanitizedUser(user),
+      token: accessToken,
+    });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    next(new ApiError("حدث خطأ أثناء تغيير الباسوورد", 500));
+  }
 };
 
 export {

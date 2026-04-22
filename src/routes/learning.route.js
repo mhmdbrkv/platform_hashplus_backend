@@ -11,7 +11,7 @@ import {
 import { guard, allowedTo } from "../middleware/auth.middleware.js";
 import { checkSubscription } from "../middleware/subscription.middleware.js";
 
-import validate from "../middleware/validator.middleware.js";
+import validate from "../middleware/validate.middleware.js";
 import { mongoIdSchema } from "../validators/common.validator.js";
 import {
   addToMyLearningSchemam,

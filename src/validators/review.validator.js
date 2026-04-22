@@ -22,7 +22,7 @@ export const updateReviewSchema = z.object({
       rating: z.number().int().min(1).max(5).optional(),
       review: z.string().min(5).max(1000).optional(),
     })
-    .strict(),
+    .optional(),
   params: z
     .object({
       reviewId: z.custom((value) => {

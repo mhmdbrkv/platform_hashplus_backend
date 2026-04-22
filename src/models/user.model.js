@@ -65,7 +65,7 @@ const userSchema = new mongoose.Schema(
     },
     password: { type: String },
     profileImage: {
-      public_id: String,
+      key: String,
       url: String,
       uploadedAt: Date,
     },

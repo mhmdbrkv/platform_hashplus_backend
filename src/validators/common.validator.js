@@ -24,5 +24,5 @@ export const paginationSchema = z.object({
       fields: z.array(z.string()).optional(),
       keyword: z.string().optional(),
     })
-    .strict(),
+    .optional(),
 });
