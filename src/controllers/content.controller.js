@@ -10,17 +10,7 @@ const getContents = async (req, res, next) => {
   try {
     // Nested Route
     let filter = {};
-    if (req.params.categoryId) {
-      if (!mongoose.isValidObjectId(req.params.categoryId)) {
-        return next(
-          new ApiError(
-            "categoryId param is not a valid mongoose ObjectId!",
-            400,
-          ),
-        );
-      }
-      filter = { category: req.params.categoryId };
-    }
+    if (req.params.categoryId) filter = { category: req.params.categoryId };
 
     // Build the query
     const numOfDocument = await Content.countDocuments();
@@ -55,15 +45,15 @@ const getContent = async (req, res, next) => {
     const content = await Content.findById(contentId)
       .populate({
         path: "reviews",
-        select: "review rating user",
+        select: "_id review rating user",
       })
       .populate({
         path: "instructor",
-        select: "name profileImage",
+        select: "_id name profileImage",
       })
       .populate({
         path: "category",
-        select: "name",
+        select: "_id name",
       })
       .lean();
 
@@ -106,11 +96,7 @@ const createContent = async (req, res, next) => {
       totalProjects,
     } = req.body;
 
-    if (!title || typeof title !== "string") {
-      return next(new ApiError("Content title required", 400));
-    }
-
-    const slug = slugify(this.title, { lower: true, trim: true });
+    const slug = slugify(title, { lower: true, trim: true });
 
     const content = await Content.findOne({ slug });
     if (content) {
@@ -118,52 +104,9 @@ const createContent = async (req, res, next) => {
     }
 
     const finalInstructor = instructor || req.user?._id;
-    const finalPrice =
-      typeof price === "object" && price !== null
-        ? price
-        : { amount: Number(price) };
-
-    if (
-      finalProject &&
-      (!finalProject.title ||
-        !finalProject.description ||
-        !Array.isArray(finalProject.tasks) ||
-        !Array.isArray(finalProject.materials))
-    ) {
-      return next(
-        new ApiError(
-          "Final Project title, description, tasks and materials are required in finalProject",
-          400,
-        ),
-      );
-    }
-
-    if (welcomeVideo) {
-      if (
-        !welcomeVideo.url ||
-        !welcomeVideo.key ||
-        !welcomeVideo.size ||
-        !welcomeVideo.duration
-      ) {
-        return next(
-          new ApiError(
-            "Welcome Video url and key and size and duration are required in welcomeVideo",
-            400,
-          ),
-        );
-      }
-    }
-
-    if (thumbnail) {
-      if (!thumbnail.url || !thumbnail.key) {
-        return next(
-          new ApiError("Thumbnail url and key are required in thumbnail", 400),
-        );
-      }
-    }
 
     const newContent = await Content.create({
-      title: `${title}`.trim(),
+      title,
       slug,
       contentType,
       category,
@@ -176,8 +119,8 @@ const createContent = async (req, res, next) => {
       level,
       language,
       materials,
-      price: finalPrice,
-      thumbnail: thumbnail || null,
+      price,
+      thumbnail: thumbnail ? { ...thumbnail, uploadedAt: new Date() } : null,
       welcomeVideo: welcomeVideo
         ? { ...welcomeVideo, uploadedAt: new Date() }
         : null,
@@ -234,7 +177,10 @@ const updateContent = async (req, res, next) => {
       return next(new ApiError("Content not found", 404));
     }
 
-    if (req.user.role !== "admin" && req.user._id !== content.instructor) {
+    if (
+      req.user.role !== "admin" &&
+      req.user._id.toString() !== content.instructor.toString()
+    ) {
       return next(
         new ApiError("You are not authorized to update this content", 403),
       );
@@ -305,17 +251,7 @@ const completeFinalProject = async (req, res, next) => {
   try {
     const { contentId } = req.params;
 
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
     const { links, notes } = req.body || {};
-
-    if (!links || !Array.isArray(links) || links.length === 0) {
-      return next(new ApiError("Links are required.", 400));
-    }
 
     const content = await Content.findById(contentId);
 

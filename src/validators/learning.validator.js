@@ -1,14 +1,15 @@
 import { z } from "zod";
 import mongoose from "mongoose";
 
+const isObjectId = (schema, fieldName = "ID") =>
+  schema.refine(
+    (value) => mongoose.isValidObjectId(value),
+    `${fieldName} must be a valid MongoDB ID`,
+  );
+
 export const addToMyLearningSchemam = z.object({
   body: z.object({
-    contentId: z.custom((value) => {
-      if (!mongoose.isValidObjectId(value)) {
-        throw new Error("Invalid content ID");
-      }
-      return value;
-    }),
+    contentId: isObjectId(z.string(), "contentId"),
   }),
 });
 
@@ -17,11 +18,6 @@ export const updateProgressSchema = z.object({
     progress: z.coerce.number().min(0).max(100),
   }),
   params: z.object({
-    contentId: z.custom((value) => {
-      if (!mongoose.isValidObjectId(value)) {
-        throw new Error("Invalid content ID");
-      }
-      return value;
-    }),
+    contentId: isObjectId(z.string(), "contentId"),
   }),
 });
