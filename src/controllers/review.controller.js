@@ -10,14 +10,6 @@ const getReviews = async (req, res, next) => {
     // Nested Route
     let filter = {};
     if (req.params.contentId) {
-      if (!mongoose.isValidObjectId(req.params.contentId)) {
-        return next(
-          new ApiError(
-            "contentId param is not a valid mongoose ObjectId!",
-            400,
-          ),
-        );
-      }
       filter = { content: req.params.contentId };
     }
 
@@ -50,15 +42,9 @@ const getReviews = async (req, res, next) => {
 
 const getReview = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { reviewId } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
-      return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    const review = await Review.findById(id).lean();
+    const review = await Review.findById(reviewId).lean();
 
     if (!review) {
       return next(new ApiError("Review not found", 404));
@@ -77,12 +63,6 @@ const getReview = async (req, res, next) => {
 const createReview = async (req, res, next) => {
   try {
     const { rating, review, content } = req.body;
-
-    if (!mongoose.isValidObjectId(content)) {
-      return next(
-        new ApiError("content param is not a valid mongoose ObjectId!", 400),
-      );
-    }
 
     const reviewExists = await Review.findOne({
       user: req.user._id,
@@ -116,28 +96,37 @@ const createReview = async (req, res, next) => {
 
 const updateReview = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { reviewId } = req.params;
     const { rating, review } = req.body;
 
-    if (!mongoose.isValidObjectId(id)) {
+    const reviewDoc = await Review.findById(reviewId).populate({
+      path: "content",
+      select: "_id instructor",
+    });
+
+    if (!reviewDoc) {
+      return next(new ApiError("Review not found!", 404));
+    }
+
+    if (
+      (req.user.role === "student" &&
+        reviewDoc.user.toString() !== req.user._id.toString()) ||
+      (req.user.role === "instructor" &&
+        reviewDoc.content.instructor.toString() !== req.user._id.toString())
+    ) {
       return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
+        new ApiError("You are not authorized to update this review!", 404),
       );
     }
 
-    const updatedReview = await Review.findOneAndUpdate(
-      { _id: id, user: req.user._id },
+    const updatedReview = await Review.findByIdAndUpdate(
+      reviewId,
       { rating, review },
       { returnDocument: "after" },
     );
-    if (!updatedReview) {
-      return next(
-        new ApiError("Review not found or you are not authorized!", 404),
-      );
-    }
 
     //Applying aggregation after updating a review
-    aggregateRatings(updatedReview.content, Review, Content);
+    aggregateRatings(reviewDoc.content._id, Review, Content);
 
     res.status(200).json({
       status: "success",
@@ -146,31 +135,38 @@ const updateReview = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
-    next(new ApiError(error, 500));
+    next(new ApiError("Failed to update review", 500));
   }
 };
 
 const deleteReview = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { reviewId } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
-      return next(
-        new ApiError("id param is not a valid mongoose ObjectId!", 400),
-      );
-    }
+    const review = await Review.findById(reviewId).populate({
+      path: "content",
+      select: "_id instructor",
+    });
 
-    const review = await Review.findOne({ _id: id, user: req.user._id });
     if (!review) {
+      return next(new ApiError("Review not found!", 404));
+    }
+
+    if (
+      (req.user.role === "student" &&
+        review.user.toString() !== req.user._id.toString()) ||
+      (req.user.role === "instructor" &&
+        review.content.instructor.toString() !== req.user._id.toString())
+    ) {
       return next(
-        new ApiError("Review not found or you are not authorized!", 404),
+        new ApiError("You are not authorized to delete this review!", 404),
       );
     }
 
-    await Review.deleteOne({ _id: id, user: req.user._id });
+    await Review.findByIdAndDelete(reviewId);
 
     //Applying aggregation after deleting a review
-    aggregateRatings(review.content, Review, Content);
+    aggregateRatings(review.content._id, Review, Content);
 
     res.status(204).json({
       status: "success",

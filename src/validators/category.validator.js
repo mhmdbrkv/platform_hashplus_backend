@@ -11,6 +11,11 @@ export const updateCategorySchema = z.object({
     name: z.string().min(2).max(50),
   }),
   params: z.object({
-    categoryId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid MongoDB ID"),
+    categoryId: z.custom((value) => {
+      if (!mongoose.isValidObjectId(value)) {
+        throw new Error(`categoryId must be a valid MongoDB ID`);
+      }
+      return value;
+    }),
   }),
 });

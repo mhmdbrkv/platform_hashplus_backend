@@ -39,10 +39,14 @@ class ApiFeatures {
   search(modelName) {
     if (this.queryString.keyword) {
       const query = {};
-      if (modelName === "Course") {
+      if (modelName === "Content") {
         query.$or = [
           { title: { $regex: this.queryString.keyword, $options: "i" } },
-          { subtitle: { $regex: this.queryString.keyword, $options: "i" } },
+          { description: { $regex: this.queryString.keyword, $options: "i" } },
+        ];
+      } else if (modelName === "Review") {
+        query.$or = [
+          { review: { $regex: this.queryString.keyword, $options: "i" } },
         ];
       } else {
         query.$or = [
