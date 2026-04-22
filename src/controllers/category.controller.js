@@ -1,3 +1,4 @@
+import slugify from "slugify";
 import Category from "../models/category.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
@@ -33,8 +34,8 @@ const getCategories = async (req, res, next) => {
 
 const getCategory = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const category = await Category.findById(id).lean();
+    const { categoryId } = req.params;
+    const category = await Category.findById(categoryId).lean();
 
     if (!category) {
       return next(new ApiError("Category not found", 404));
@@ -54,7 +55,7 @@ const getCategory = async (req, res, next) => {
 const createCategory = async (req, res, next) => {
   try {
     const { name } = req.body;
-    const slug = name.toLowerCase().trim().replace(/\s+/g, "-");
+    const slug = slugify(name, { lower: true, trim: true });
 
     const category = await Category.findOne({ slug });
     if (category) {
@@ -75,13 +76,13 @@ const createCategory = async (req, res, next) => {
 
 const updateCategory = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { categoryId } = req.params;
     const { name } = req.body;
-    const slug = name.toLowerCase().trim().replace(/\s+/g, "-");
+    const slug = slugify(name, { lower: true, trim: true });
     const category = await Category.findByIdAndUpdate(
-      id,
+      categoryId,
       { name, slug },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     if (!category) {
@@ -101,8 +102,8 @@ const updateCategory = async (req, res, next) => {
 
 const deleteCategory = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const category = await Category.findByIdAndDelete(id);
+    const { categoryId } = req.params;
+    const category = await Category.findByIdAndDelete(categoryId);
     res.status(200).json({
       status: "success",
       message: "Category deleted successfully",
@@ -110,7 +111,7 @@ const deleteCategory = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
-    next(new ApiError(error, 500));
+    next(new ApiError("Failed to delete category", 500));
   }
 };
 

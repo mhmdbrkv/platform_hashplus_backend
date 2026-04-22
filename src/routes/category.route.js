@@ -8,20 +8,34 @@ import {
   deleteCategory,
 } from "../controllers/category.controller.js";
 
+import {
+  createCategorySchema,
+  updateCategorySchema,
+} from "../validators/category.validator.js";
+import { objectId } from "../validators/common.validator.js";
+import validate from "../middleware/validate.middleware.js";
+
 import contentRoute from "./content.route.js";
-import { guard } from "../middleware/auth.middleware.js";
+import { guard, allowedTo } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
 //Nested Route
-router.use("/:categoryId/contents", contentRoute);
+router.use(
+  "/:categoryId/contents",
+  validate(objectId("categoryId")),
+  contentRoute,
+);
 
 router.get("/", getCategories);
-router.get("/:id", getCategory);
+router.get("/:categoryId", validate(objectId("categoryId")), getCategory);
 
-router.use(guard);
+router.use(guard, allowedTo("admin"));
 
-router.post("/", createCategory);
-router.route("/:id").put(updateCategory).delete(deleteCategory);
+router.post("/", validate(createCategorySchema), createCategory);
+router
+  .route("/:categoryId")
+  .patch(validate(updateCategorySchema), updateCategory)
+  .delete(validate(objectId("categoryId")), deleteCategory);
 
 export default router;
