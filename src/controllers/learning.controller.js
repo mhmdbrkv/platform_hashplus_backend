@@ -2,10 +2,13 @@ import { Content } from "../models/content.model.js";
 import Learning from "../models/learning.model.js";
 import { ApiError } from "../utils/apiError.js";
 
-const getMyLearning = async (req, res) => {
+const getMyLearning = async (req, res, next) => {
   try {
     const userId = req.user._id;
     const learning = await Learning.find({ user: userId });
+
+    if (!learning) return next(new ApiError("No learning found", 404));
+
     res.status(200).json({
       success: true,
       message: "data fetched successfully",
@@ -14,14 +17,14 @@ const getMyLearning = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, message: "Error fetching data" });
+    next(new ApiError("Error fetching data", 500));
   }
 };
 
 const addToMyLearning = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const { contentId } = req.params;
+    const { contentId } = req.body;
     const content = await Content.findById(contentId);
     if (!content) return next(new ApiError("Content not found", 404));
 
@@ -36,6 +39,7 @@ const addToMyLearning = async (req, res, next) => {
       content: contentId,
       type: content.contentType,
     });
+
     res.status(200).json({
       success: true,
       message: "data added successfully",
@@ -43,18 +47,22 @@ const addToMyLearning = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, message: "Error adding data" });
+    next(new ApiError("Error adding data", 500));
   }
 };
 
-const removeFromMyLearning = async (req, res) => {
+const removeFromMyLearning = async (req, res, next) => {
   try {
     const userId = req.user._id;
     const { contentId } = req.params;
+
     const learning = await Learning.findOneAndDelete({
       user: userId,
       content: contentId,
     });
+
+    if (!learning) return next(new ApiError("No learning found", 404));
+
     res.status(200).json({
       success: true,
       message: "data deleted successfully",
@@ -62,20 +70,15 @@ const removeFromMyLearning = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, message: "Error deleting data" });
+    next(new ApiError("Error deleting data", 500));
   }
 };
 
-const updateProgress = async (req, res) => {
+const updateProgress = async (req, res, next) => {
   try {
     const userId = req.user._id;
     const { contentId } = req.params;
-    const progress = Number(req.body.progress);
-
-    // progress validation
-    if (progress < 0 || progress > 100) {
-      return next(new ApiError("Progress should be between 0 and 100", 400));
-    }
+    const { progress } = req.body;
 
     const learning = await Learning.findOneAndUpdate(
       { user: userId, content: contentId },
@@ -101,7 +104,7 @@ const updateProgress = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, message: "Error updating data" });
+    next(new ApiError("Error updating data", 500));
   }
 };
 

@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Review from "../models/review.model.js";
 import { Content } from "../models/content.model.js";
 import { ApiError } from "../utils/apiError.js";

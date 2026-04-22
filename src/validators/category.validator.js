@@ -1,21 +1,27 @@
 import { z } from "zod";
 
 export const createCategorySchema = z.object({
-  body: z.object({
-    name: z.string().min(2).max(50),
-  }),
+  body: z
+    .object({
+      name: z.string().min(2).max(50),
+    })
+    .strict(),
 });
 
 export const updateCategorySchema = z.object({
-  body: z.object({
-    name: z.string().min(2).max(50),
-  }),
-  params: z.object({
-    categoryId: z.custom((value) => {
-      if (!mongoose.isValidObjectId(value)) {
-        throw new Error(`categoryId must be a valid MongoDB ID`);
-      }
-      return value;
-    }),
-  }),
+  body: z
+    .object({
+      name: z.string().min(2).max(50),
+    })
+    .strict(),
+  params: z
+    .object({
+      categoryId: z.custom((value) => {
+        if (!mongoose.isValidObjectId(value)) {
+          throw new Error(`categoryId must be a valid MongoDB ID`);
+        }
+        return value;
+      }),
+    })
+    .strict(),
 });
