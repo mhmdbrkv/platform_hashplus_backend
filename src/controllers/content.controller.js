@@ -110,7 +110,7 @@ const createContent = async (req, res, next) => {
       return next(new ApiError("Content title required", 400));
     }
 
-    const slug = `${title}`.trim();
+    const slug = slugify(this.title, { lower: true, trim: true });
 
     const content = await Content.findOne({ slug });
     if (content) {
@@ -225,7 +225,14 @@ const updateContent = async (req, res, next) => {
       endDate,
       totalProjects,
     } = req.body || {};
-    const slug = title ? slugify(title) : undefined;
+    const slug = title
+      ? slugify(title, { lower: true, trim: true })
+      : undefined;
+
+    const content = await Content.findById(contentId);
+    if (!content) {
+      return next(new ApiError("Content not found", 404));
+    }
 
     if (req.user.role !== "admin" && req.user._id !== content.instructor) {
       return next(
@@ -233,7 +240,7 @@ const updateContent = async (req, res, next) => {
       );
     }
 
-    const content = await Content.findByIdAndUpdate(
+    const updatedContent = await Content.findByIdAndUpdate(
       contentId,
       {
         title,
@@ -258,14 +265,10 @@ const updateContent = async (req, res, next) => {
       { returnDocument: "after" },
     );
 
-    if (!content) {
-      return next(new ApiError("Content not found", 404));
-    }
-
     res.status(200).json({
       status: "success",
       message: "Content updated successfully",
-      data: content,
+      data: updatedContent,
     });
   } catch (error) {
     console.log(error);

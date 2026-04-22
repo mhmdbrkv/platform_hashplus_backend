@@ -125,14 +125,14 @@ contentSchema.virtual("reviews", {
 // ─────────────────────────────────────────────
 contentSchema.pre("save", async function () {
   if (this.isModified("title") || !this.slug) {
-    const base = slugify(this.title);
+    const slug = slugify(this.title, { lower: true, trim: true });
 
     const existing = await Content.findOne({
-      slug: new RegExp(`^${base}(-\\d+)?$`),
+      slug,
       _id: { $ne: this._id },
     });
 
-    this.slug = existing ? `${base}-${Date.now()}` : base;
+    this.slug = existing ? `${slug}-${Date.now()}` : slug;
   }
 });
 
