@@ -1,19 +1,42 @@
 import { z } from "zod";
+import mongoose from "mongoose";
 
-export const createReviewSchema = z.object({
+const trimString = (schema) =>
+  schema
+    .transform((value) => value.trim())
+    .refine((value) => value.length > 0, "Required");
+
+const isObjectId = (schema, fieldName = "ID") =>
+  schema.refine(
+    (value) => mongoose.isValidObjectId(value),
+    `${fieldName} must be a valid MongoDB ID`,
+  );
+
+export const startUploadSchema = z.object({
   body: z.object({
-    rating: z.number().int().min(1).max(5),
-    review: z.string().min(5).max(1000),
-    content: z.string().regex(/^[a-f\d]{24}$/i, "Invalid content ID"),
+    fileName: trimString(z.string()),
+    fileType: trimString(z.string()),
+    userId: isObjectId(z.string(), "userId"),
+    partsCount: z.coerce.number().int().min(1).max(10000),
   }),
 });
 
-export const updateReviewSchema = z.object({
+export const completeUploadSchema = z.object({
   body: z.object({
-    rating: z.number().int().min(1).max(5).optional(),
-    review: z.string().min(5).max(1000).optional(),
+    key: trimString(z.string()),
+    uploadId: trimString(z.string()),
+    parts: z.array(
+      z.object({
+        PartNumber: z.coerce.number().int().min(1).max(10000),
+        ETag: trimString(z.string()),
+      }),
+    ),
   }),
-  params: z.object({
-    id: z.string().regex(/^[a-f\d]{24}$/i, "Invalid review ID"),
+});
+
+export const removeUploadSchema = z.object({
+  body: z.object({
+    key: trimString(z.string()),
+    uploadId: trimString(z.string()),
   }),
 });

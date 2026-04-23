@@ -79,11 +79,12 @@ export const abortMultipartUpload = async (key, uploadId) => {
 };
 
 // Delete Upload
-export const deleteUpload = async (key) => {
+export const deleteUpload = async (key, uploadId) => {
   await s3Client.send(
     new DeleteObjectCommand({
       Bucket: R2_BUCKET,
       Key: key,
+      UploadId: uploadId,
     }),
   );
 

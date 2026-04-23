@@ -10,18 +10,7 @@ import {
 // Start Multipart Upload, Generate Pre-Signed URLs
 export const startUpload = async (req, res, next) => {
   try {
-    const { fileName, fileType, userId } = req.body;
-
-    const partsCount = Number(req.body.partsCount);
-
-    if (!fileName || !fileType || !userId || !partsCount) {
-      return next(
-        new ApiError(
-          "fileName, fileType, userId and partsCount fields are required!",
-          400,
-        ),
-      );
-    }
+    const { fileName, fileType, userId, partsCount } = req.body;
 
     const { uploadId, key } = await startMultipartUpload(
       fileName,
@@ -90,9 +79,9 @@ export const abortUpload = async (req, res, next) => {
 // Delete Upload
 export const removeUpload = async (req, res, next) => {
   try {
-    const { key } = req.body;
+    const { key, uploadId } = req.body;
 
-    const data = await deleteUpload(key);
+    const data = await deleteUpload(key, uploadId);
 
     if (!data) {
       return next(new ApiError("Error deleting upload.", 400));
