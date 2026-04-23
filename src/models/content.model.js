@@ -44,12 +44,12 @@ const contentSchema = new mongoose.Schema(
 
     learningOutcomes: {
       type: [String],
-      required: [true, "Content learning outcomes required"],
+      default: [],
     },
 
     prerequisites: {
       type: [String],
-      required: [true, "Content pre-requisites required"],
+      default: [],
     },
 
     welcomeMessage: { type: String, trim: true, default: "" },
@@ -69,7 +69,7 @@ const contentSchema = new mongoose.Schema(
     price: {
       amount: {
         type: Number,
-        required: [true, "Price amount required"],
+        default: 0,
         min: 0,
       },
       currency: { type: String, default: "SAR" },
