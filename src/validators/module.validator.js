@@ -164,8 +164,6 @@ export const updateOneCourseModuleSchema = z.object({
   }),
 });
 
-// --------------------------------------------
-
 export const addBootcampModuleSchema = z.object({
   body: z
     .object({

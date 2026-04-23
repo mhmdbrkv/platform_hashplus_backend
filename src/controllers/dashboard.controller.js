@@ -1,3 +1,4 @@
+import ApiFeatures from "../utils/apiFeatures.js";
 import { ApiError } from "../utils/apiError.js";
 import User from "../models/user.model.js";
 import Learning from "../models/learning.model.js";
@@ -243,96 +244,20 @@ const createUser = async (req, res, next) => {
     const user = await User.findOne({ email });
     if (user) return next(new ApiError("User already exists", 400));
 
-    let linksDate = [];
-    let languagesDate = [];
-    let skillsDate = [];
-    let educationDate = [];
-    let experienceDate = [];
-
-    let studentDetailsData = {};
-    let instructorDetailsData = {};
-
-    linksDate = links?.map((link) => ({
-      name: link.name.toLowerCase(),
-      url: link.url.toLowerCase(),
-    }));
-
-    languagesDate = languages?.map((lang) => ({
-      language: lang.language.toLowerCase(),
-      proficiency: lang.proficiency.toLowerCase(),
-    }));
-
-    skillsDate = skills?.map((skill) => skill.toLowerCase());
-
-    educationDate = education?.map((edu) => ({
-      institution: edu.institution.toLowerCase(),
-      degree: edu.degree.toLowerCase(),
-      major: edu.major.toLowerCase(),
-      startDate: edu.startDate,
-      endDate: edu.endDate,
-      description: edu.description.toLowerCase(),
-      isCurrent: edu.isCurrent,
-    }));
-
-    experienceDate = experience?.map((exp) => ({
-      company: exp.company.toLowerCase(),
-      country: exp.country.toLowerCase(),
-      city: exp.city.toLowerCase(),
-      jobTitle: exp.jobTitle.toLowerCase(),
-      jobType: exp.jobType.toLowerCase(),
-      jobStyle: exp.jobStyle.toLowerCase(),
-      startDate: exp.startDate,
-      endDate: exp.endDate,
-      skills: exp.skills.map((skill) => skill.toLowerCase()),
-      description: exp.description.toLowerCase(),
-      isCurrent: exp.isCurrent,
-    }));
-
-    if (role === "student") {
-      studentDetailsData = {
-        projects: studentDetails.projects?.map((project) => ({
-          title: project.title.toLowerCase(),
-          description: project.description.toLowerCase(),
-          roleInProject: project.roleInProject.toLowerCase(),
-          skillsUsed: project.skillsUsed.map((skill) => skill.toLowerCase()),
-          startDate: project.startDate,
-          endDate: project.endDate,
-          projectImageUrls: project.projectImageUrls,
-        })),
-
-        certificates: studentDetails.certificates?.map((certificate) => ({
-          name: certificate.name.toLowerCase(),
-          description: certificate.description.toLowerCase(),
-          contentId: certificate.contentId,
-          certificateUrl: certificate.certificateUrl,
-          issuedAt: certificate.issuedAt,
-        })),
-      };
-    } else if (role === "instructor") {
-      instructorDetailsData = {
-        teachingStyle: instructorDetails.teachingStyle.toLowerCase(),
-        videoProfessionality:
-          instructorDetails.videoProfessionality.toLowerCase(),
-        targetAudience: instructorDetails.targetAudience.toLowerCase(),
-        isVerified: instructorDetails.isVerified,
-        verifiedAt: instructorDetails.verifiedAt,
-      };
-    }
-
     const student = await User.create({
       name,
       email,
       password,
       role: role,
       phone,
-      languages: languagesDate,
+      languages,
       bio,
-      links: linksDate,
-      skills: skillsDate,
-      education: educationDate,
-      experience: experienceDate,
-      studentDetails: studentDetailsData,
-      instructorDetails: instructorDetailsData,
+      links,
+      skills,
+      education,
+      experience,
+      studentDetails,
+      instructorDetails,
       otpIsVerified: true,
     });
 
@@ -351,15 +276,30 @@ const createUser = async (req, res, next) => {
 const getAllUsers = async (req, res, next) => {
   try {
     const { role } = req.query || {};
-    const users = await User.find(role ? { role } : {})
-      .select("-password")
-      .lean();
+
+    // Build the query
+    const numOfDocument = await User.countDocuments();
+    const apiFeatures = new ApiFeatures(
+      User.find(role ? { role } : {}).select("-password"),
+      req.query,
+    )
+      .paginate(numOfDocument)
+      .filter()
+      .limitFields()
+      .search("User")
+      .sort();
+
+    const { mongooseQuery, pagination } = apiFeatures;
+
+    // Excute the query
+    const docs = await mongooseQuery;
 
     res.status(200).json({
       status: "success",
       message: "تم جلب جميع المستخدمين بنجاح",
-      length: users.length,
-      data: users,
+      result: docs.length,
+      pagination,
+      data: docs,
     });
   } catch (error) {
     console.error("Error in getAllUsers:", error);
@@ -460,15 +400,30 @@ const toggleUserIsActive = async (req, res, next) => {
 const getAllContent = async (req, res, next) => {
   try {
     const { contentType } = req.query || {};
-    const content = await Content.find(
-      contentType ? { contentType } : {},
-    ).lean();
+
+    // Build the query
+    const numOfDocument = await Content.countDocuments();
+    const apiFeatures = new ApiFeatures(
+      Content.find(contentType ? { contentType } : {}),
+      req.query,
+    )
+      .paginate(numOfDocument)
+      .filter()
+      .limitFields()
+      .search("Content")
+      .sort();
+
+    const { mongooseQuery, pagination } = apiFeatures;
+
+    // Excute the query
+    const docs = await mongooseQuery;
 
     res.status(200).json({
       status: "success",
       message: "تم جلب جميع المحتوى بنجاح",
-      length: content.length,
-      data: content,
+      result: docs.length,
+      pagination,
+      data: docs,
     });
   } catch (error) {
     console.error("Error fetching all content:", error);

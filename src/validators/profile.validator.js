@@ -29,7 +29,7 @@ export const updateMyProfileSchema = z.object({
       .array(
         z.object({
           name: trimString(z.string().min(3).max(100)),
-          url: z.url(),
+          url: trimString(z.url()),
         }),
       )
       .optional(),
