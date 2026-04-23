@@ -16,18 +16,6 @@ const getMyModuleForInstructor = async (req, res, next) => {
     const { moduleId } = req.params;
     const { contentId } = req.params;
 
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
     const content = await Content.findOne({ _id: contentId, instructor });
 
     if (!content) {
@@ -55,18 +43,6 @@ const getOneModule = async (req, res, next) => {
   try {
     const { moduleId } = req.params;
     const { contentId } = req.params;
-
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
 
     const content = await Content.findById(contentId);
 
@@ -121,30 +97,16 @@ const addCourseModule = async (req, res, next) => {
 
     const { contentId } = req.params;
 
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
     const content = await Course.findById(contentId);
 
     if (!content) {
       return next(new ApiError(`No content found with id: ${contentId}`, 404));
     }
 
-    if (!title) {
-      return next(new ApiError("title is required!", 400));
-    }
-
     let dataObj = {};
 
     switch (moduleType) {
       case "video":
-        if (!videoData)
-          return next(
-            new ApiError("videoData is required for video modules.", 400),
-          );
         dataObj = {
           video: {
             url: videoData.url,
@@ -157,11 +119,6 @@ const addCourseModule = async (req, res, next) => {
         };
         break;
       case "quiz":
-        if (!quizData)
-          return next(
-            new ApiError("quizData is required for quiz modules.", 400),
-          );
-
         dataObj = {
           quiz: quizData.map(({ question, options, answer }) => ({
             question,
@@ -171,10 +128,6 @@ const addCourseModule = async (req, res, next) => {
         };
         break;
       case "task":
-        if (!taskData)
-          return next(
-            new ApiError("taskData is required for task modules.", 400),
-          );
         dataObj = {
           task: {
             url: taskData.url,
@@ -185,10 +138,6 @@ const addCourseModule = async (req, res, next) => {
         };
         break;
       case "link":
-        if (!linkData)
-          return next(
-            new ApiError("linkData is required for link modules.", 400),
-          );
         dataObj = {
           link: {
             url: linkData.url,
@@ -233,18 +182,6 @@ const updateOneCourseModule = async (req, res, next) => {
     const { contentId } = req.params;
     const { moduleId } = req.params;
 
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
     const {
       moduleType,
       title,
@@ -265,41 +202,20 @@ const updateOneCourseModule = async (req, res, next) => {
 
     if (!module) return next(new ApiError("No Module Found", 404));
 
-    if (title !== undefined) module.title = title;
-    if (description !== undefined) module.description = description;
+    if (title) module.title = title;
+    if (description) module.description = description;
 
-    if (moduleType && moduleType === "video") {
-      if (!videoData)
-        return next(
-          new ApiError("videoData is required for video module updates.", 400),
-        );
-
+    if (moduleType === "video") {
       module.video = { ...videoData, uploadedAt: new Date() };
-    } else if (moduleType && moduleType === "quiz") {
-      if (!quizData)
-        return next(
-          new ApiError("quizData is required for quiz module updates.", 400),
-        );
-
+    } else if (moduleType === "quiz") {
       module.quiz = quizData.map(({ question, options, answer }) => ({
         question,
         options,
         answer,
       }));
-    } else if (moduleType && moduleType === "task") {
-      if (!taskData)
-        return next(
-          new ApiError("taskData is required for task module updates.", 400),
-        );
-
+    } else if (moduleType === "task") {
       module.task = { ...taskData, uploadedAt: new Date() };
-    } else if (moduleType && moduleType === "link") {
-      if (!linkData) {
-        return next(
-          new ApiError("linkData is required for link module updates.", 400),
-        );
-      }
-
+    } else if (moduleType === "link") {
       module.link = { ...linkData };
     }
 
@@ -308,7 +224,7 @@ const updateOneCourseModule = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       message: "Module Updated Successfully!",
-      data: content,
+      data: module,
     });
   } catch (error) {
     console.error(error);
@@ -320,18 +236,6 @@ const removeOneCourseModule = async (req, res, next) => {
   try {
     const { contentId } = req.params;
     const { moduleId } = req.params;
-
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
 
     const content = await Course.findById(contentId);
 
@@ -369,23 +273,7 @@ const answerCourseModule = async (req, res, next) => {
     const { contentId } = req.params;
     const { moduleId } = req.params;
 
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
     const { answers } = req.body || {};
-
-    if (!answers || !Array.isArray(answers) || answers.length === 0) {
-      return next(new ApiError("Answers are required.", 400));
-    }
 
     const content = await Course.findById(contentId);
 
@@ -419,12 +307,16 @@ const answerCourseModule = async (req, res, next) => {
         if (
           !answers.some(
             (answer) =>
-              typeof answer.question === "string" &&
               answer.question.toLowerCase().trim() ===
-                quiz.question.toLowerCase().trim(),
+              quiz.question.toLowerCase().trim(),
           )
         ) {
-          return next(new ApiError("Please answer all the questions.", 400));
+          return next(
+            new ApiError(
+              "All sent questions must match with the module's questions.",
+              400,
+            ),
+          );
         }
       }
 
@@ -452,9 +344,8 @@ const answerCourseModule = async (req, res, next) => {
       for (const quiz of quizArray) {
         const answer = answers.find(
           (answer) =>
-            typeof answer.question === "string" &&
             answer.question.toLowerCase().trim() ===
-              quiz.question.toLowerCase().trim(),
+            quiz.question.toLowerCase().trim(),
         );
         if (
           answer &&
@@ -488,18 +379,6 @@ const getCourseModuleAnswers = async (req, res, next) => {
   try {
     const { contentId } = req.params;
     const { moduleId } = req.params;
-
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
 
     const userAnswers = await UserAnswersModel.findOne({
       user: req.user._id,
@@ -539,49 +418,13 @@ const addBootcampModule = async (req, res, next) => {
 
     const { contentId } = req.params;
 
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
     const content = await Bootcamp.findById(contentId);
 
     if (!content) {
       return next(new ApiError(`No content found with id: ${contentId}`, 404));
     }
 
-    if (!title) {
-      return next(new ApiError("title is required!", 400));
-    }
-
-    if (video && (!video.url || !video.key || !video.duration || !video.size)) {
-      return next(
-        new ApiError("video url, key, duration and size are required!", 400),
-      );
-    }
-
-    if (liveSession && !liveSession.url) {
-      return next(new ApiError("liveSession url is required!", 400));
-    }
-
-    if (
-      projects &&
-      Array.isArray(projects) &&
-      projects.length > 0 &&
-      projects.some(
-        (p) => !p.title || !p.description || !p.githubUrl || !p.liveDemoUrl,
-      )
-    ) {
-      return next(
-        new ApiError(
-          "projects title, description, githubUrl and liveDemoUrl are required!",
-          400,
-        ),
-      );
-    }
-
-    content.modules.push({
+    let data = {
       title,
       description,
       liveSession,
@@ -590,8 +433,9 @@ const addBootcampModule = async (req, res, next) => {
       timeEnd,
       timezone,
       projects,
-    });
+    };
 
+    content.modules.push(data);
     await content.save();
 
     res.status(201).json({
@@ -599,14 +443,7 @@ const addBootcampModule = async (req, res, next) => {
       message: "Module Added Successfully!",
       data: {
         _id: content.modules[content.modules.length - 1]._id,
-        title,
-        description,
-        liveSession,
-        video: video ? { ...video, uploadedAt: new Date() } : undefined,
-        timeStart,
-        timeEnd,
-        timezone,
-        projects,
+        ...data,
       },
     });
   } catch (error) {
@@ -619,18 +456,6 @@ const updateOneBootcampModule = async (req, res, next) => {
   try {
     const { contentId } = req.params;
     const { moduleId } = req.params;
-
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
 
     const {
       title,
@@ -653,47 +478,14 @@ const updateOneBootcampModule = async (req, res, next) => {
 
     if (!module) return next(new ApiError("No Module Found", 404));
 
-    if (title !== undefined) module.title = title;
-    if (description !== undefined) module.description = description;
-    if (timeStart !== undefined) module.timeStart = timeStart;
-    if (timeEnd !== undefined) module.timeEnd = timeEnd;
-    if (timezone !== undefined) module.timezone = timezone;
-
-    if (liveSession !== undefined) {
-      if (!liveSession.url) {
-        return next(new ApiError("liveSession url is required!", 400));
-      }
-      module.liveSession = {
-        ...(module.liveSession?.toObject?.() ?? {}),
-        ...liveSession,
-      };
-    }
-
-    if (video !== undefined) {
-      if (!video.url || !video.key || !video.duration || !video.size) {
-        return next(
-          new ApiError("video url, key, duration and size are required!", 400),
-        );
-      }
-      module.video = { ...video, uploadedAt: new Date() };
-    }
-
-    if (projects !== undefined) {
-      if (
-        !Array.isArray(projects) ||
-        projects.some(
-          (p) => !p.title || !p.description || !p.githubUrl || !p.liveDemoUrl,
-        )
-      ) {
-        return next(
-          new ApiError(
-            "projects title, description, githubUrl and liveDemoUrl are required!",
-            400,
-          ),
-        );
-      }
-      module.projects = projects;
-    }
+    if (title) module.title = title;
+    if (description) module.description = description;
+    if (timeStart) module.timeStart = timeStart;
+    if (timeEnd) module.timeEnd = timeEnd;
+    if (timezone) module.timezone = timezone;
+    if (liveSession) module.liveSession = liveSession;
+    if (video) module.video = { ...video, uploadedAt: new Date() };
+    if (projects) module.projects.push(...projects);
 
     await content.save();
 
@@ -712,18 +504,6 @@ const removeOneBootcampModule = async (req, res, next) => {
   try {
     const { contentId } = req.params;
     const { moduleId } = req.params;
-
-    if (!mongoose.isValidObjectId(contentId)) {
-      return next(
-        new ApiError("contentId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
-
-    if (!mongoose.isValidObjectId(moduleId)) {
-      return next(
-        new ApiError("moduleId param is not a valid mongoose ObjectId!", 400),
-      );
-    }
 
     const content = await Bootcamp.findById(contentId);
 

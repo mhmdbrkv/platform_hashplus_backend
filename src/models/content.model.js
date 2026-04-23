@@ -225,10 +225,7 @@ const bootcampSchema = new mongoose.Schema(
         timeEnd: String, // "17:00"
         timezone: { type: String, default: "Asia/Riyadh" },
 
-        liveSession: {
-          url: { type: String, default: "", trim: true },
-          _id: false,
-        },
+        liveSession: { type: String, default: "", trim: true },
 
         video: {
           url: { type: String, default: "", trim: true },
