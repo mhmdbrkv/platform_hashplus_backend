@@ -80,6 +80,9 @@ const guard = async (req, res, next) => {
 
       if (now > subscriptionEndDate) {
         // Subscription expired, deactivate it
+        loggedUser.isSubscribed = false;
+        loggedUser.subscriptionStartDate = null;
+        loggedUser.subscriptionEndDate = null;
         await deactivateGeneralSubscription(loggedUser._id);
       }
     }

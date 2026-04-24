@@ -60,20 +60,23 @@ export const completeUpload = async (req, res, next) => {
 
 // Abort Multipart Uploads
 export const abortUpload = async (req, res, next) => {
-  const { key, uploadId } = req.body;
+  try {
+    const { key, uploadId } = req.body;
 
-  const data = await abortMultipartUpload(key, uploadId);
+    const data = await abortMultipartUpload(key, uploadId);
 
-  if (!data) {
-    return next(new ApiError("Error aborting upload.", 400));
+    if (!data) {
+      return next(new ApiError("Error aborting upload.", 400));
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Upload Aborted Successfuly!",
+    });
+  } catch (error) {
+    console.error(error);
+    next(new ApiError("Error aborting upload.", 500));
   }
-
-  // await db.videos.update(video.id, { status: "aborted" });
-
-  res.status(200).json({
-    status: "success",
-    message: "Upload Aborted Successfuly!",
-  });
 };
 
 // Delete Upload

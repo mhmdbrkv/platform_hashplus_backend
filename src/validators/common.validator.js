@@ -5,10 +5,12 @@ export const mongoIdSchema = (fieldName) =>
   z.object({
     params: z
       .object({
-        [fieldName]: z.refine(
-          (value) => mongoose.isValidObjectId(value),
-          `${fieldName} must be a valid MongoDB ID`,
-        ),
+        [fieldName]: z
+          .string()
+          .refine(
+            (value) => mongoose.isValidObjectId(value),
+            `${fieldName} must be a valid MongoDB ID`,
+          ),
       })
       .strict(),
   });

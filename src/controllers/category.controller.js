@@ -27,8 +27,8 @@ const getCategories = async (req, res, next) => {
       data: docs,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error fetching categories", 500));
   }
 };
 
@@ -47,8 +47,8 @@ const getCategory = async (req, res, next) => {
       data: category,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error fetching category", 500));
   }
 };
 
@@ -69,8 +69,8 @@ const createCategory = async (req, res, next) => {
       data: newCategory,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error creating category", 500));
   }
 };
 
@@ -95,8 +95,8 @@ const updateCategory = async (req, res, next) => {
       data: category,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error updating category", 500));
   }
 };
 
@@ -104,13 +104,14 @@ const deleteCategory = async (req, res, next) => {
   try {
     const { categoryId } = req.params;
     const category = await Category.findByIdAndDelete(categoryId);
-    res.status(200).json({
-      status: "success",
-      message: "Category deleted successfully",
-      data: category,
-    });
+
+    if (!category) {
+      return next(new ApiError("Category not found", 404));
+    }
+
+    res.status(204).end();
   } catch (error) {
-    console.log(error);
+    console.error(error);
     next(new ApiError("Failed to delete category", 500));
   }
 };

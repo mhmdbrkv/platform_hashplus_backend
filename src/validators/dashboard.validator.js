@@ -149,14 +149,21 @@ const createUserSchema = z.object({
         })
         .optional(),
     })
-    .refine((data) => {
+    .superRefine((data, ctx) => {
       if (data.role === "instructor" && !data.instructorDetails) {
-        throw new Error("Instructor details are required for instructors");
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Instructor details are required for instructors",
+          path: ["instructorDetails"],
+        });
       }
       if (data.role === "student" && !data.studentDetails) {
-        throw new Error("Student details are required for students");
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Student details are required for students",
+          path: ["studentDetails"],
+        });
       }
-      return true;
     }),
 });
 

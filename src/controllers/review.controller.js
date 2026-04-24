@@ -13,7 +13,7 @@ const getReviews = async (req, res, next) => {
     }
 
     // Build the query
-    const numOfDocument = await Review.countDocuments();
+    const numOfDocument = await Review.countDocuments(filter);
     const apiFeatures = new ApiFeatures(Review.find(filter), req.query)
       .paginate(numOfDocument)
       .filter()
@@ -34,8 +34,8 @@ const getReviews = async (req, res, next) => {
       data: docs,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error fetching reviews", 500));
   }
 };
 
@@ -54,8 +54,8 @@ const getReview = async (req, res, next) => {
       data: review,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error fetching review", 500));
   }
 };
 
@@ -88,8 +88,8 @@ const createReview = async (req, res, next) => {
       data: newReview,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error creating review", 500));
   }
 };
 
@@ -114,7 +114,7 @@ const updateReview = async (req, res, next) => {
         reviewDoc.content.instructor.toString() !== req.user._id.toString())
     ) {
       return next(
-        new ApiError("You are not authorized to update this review!", 404),
+        new ApiError("You are not authorized to update this review!", 403),
       );
     }
 
@@ -158,7 +158,7 @@ const deleteReview = async (req, res, next) => {
         review.content.instructor.toString() !== req.user._id.toString())
     ) {
       return next(
-        new ApiError("You are not authorized to delete this review!", 404),
+        new ApiError("You are not authorized to delete this review!", 403),
       );
     }
 
@@ -172,8 +172,8 @@ const deleteReview = async (req, res, next) => {
       message: "Review deleted successfully",
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error deleting review", 500));
   }
 };
 
