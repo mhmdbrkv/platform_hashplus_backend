@@ -227,7 +227,7 @@ const login = async (req, res, next) => {
     const user = await User.findOne({ email });
     if (!user || !(await user.comparePassword(password))) {
       return next(
-        new ApiError("البريد الإلكتروني او كلمة المرور غير صحيحة", 404),
+        new ApiError("البريد الإلكتروني او كلمة المرور غير صحيحة", 401),
       );
     }
 
@@ -396,46 +396,51 @@ const refreshToken = async (req, res, next) => {
 
 // forgotPassword
 const forgotPassword = async (req, res, next) => {
-  // Check user
-  const { email } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) return next(new ApiError("User not found", 404));
-
-  // generate reset code
-  const random = Math.floor(100000 + Math.random() * 900000)
-    .toString()
-    .trim();
-  const resetCode = crypto.createHash("sha256").update(random).digest("hex");
-
-  // 3) Save the reset code in the database
-  user.passResetCode = resetCode; // reset code
-  user.passResetCodeEat = Date.now() + 10 * 60 * 1000; // reset code expires  in 10 mins
-  user.passResetCodeVerified = false; //  set reset code as unverified
-  await user.save();
-
-  // Email Options
-  const options = {
-    email: user.email,
-    subject: `اعادة تعيين كلمة المرور - رمز التحقق OTP (صالح لمدة 10 دقائق)`,
-    message: `مرحبا ${user.name},\nلقد أرسلنا الرمز ${random} لإعادة تعيين كلمة المرور الخاصة بك.\n\nفريق هاش بلس`,
-  };
-
-  // Sending Email
   try {
-    await sendEmail(options);
-  } catch (err) {
-    user.passResetCode = undefined;
-    user.passResetCodeEat = undefined;
-    user.passResetCodeVerified = undefined;
-    await user.save();
-    console.error("Error in forgotPassword email:", err);
-    return next(new ApiError("حدث خطأ اثناء ارسال رمز التحقق", 500));
-  }
+    // Check user
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return next(new ApiError("User not found", 404));
 
-  res.status(200).json({
-    status: "success",
-    message: `تم إرسال رمز التحقق بنجاح إلى ${user.email}. يرجى التحقق من بريدك الإلكتروني.`,
-  });
+    // generate reset code
+    const random = Math.floor(100000 + Math.random() * 900000)
+      .toString()
+      .trim();
+    const resetCode = crypto.createHash("sha256").update(random).digest("hex");
+
+    // 3) Save the reset code in the database
+    user.passResetCode = resetCode; // reset code
+    user.passResetCodeEat = Date.now() + 10 * 60 * 1000; // reset code expires  in 10 mins
+    user.passResetCodeVerified = false; //  set reset code as unverified
+    await user.save();
+
+    // Email Options
+    const options = {
+      email: user.email,
+      subject: `اعادة تعيين كلمة المرور - رمز التحقق OTP (صالح لمدة 10 دقائق)`,
+      message: `مرحبا ${user.name},\nلقد أرسلنا الرمز ${random} لإعادة تعيين كلمة المرور الخاصة بك.\n\nفريق هاش بلس`,
+    };
+
+    // Sending Email
+    try {
+      await sendEmail(options);
+    } catch (err) {
+      user.passResetCode = undefined;
+      user.passResetCodeEat = undefined;
+      user.passResetCodeVerified = undefined;
+      await user.save();
+      console.error("Error in forgotPassword email:", err);
+      return next(new ApiError("حدث خطأ اثناء ارسال رمز التحقق", 500));
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: `تم إرسال رمز التحقق بنجاح إلى ${user.email}. يرجى التحقق من بريدك الإلكتروني.`,
+    });
+  } catch (error) {
+    console.error("Error in forgotPassword:", error);
+    return next(new ApiError("حدث خطأ اثناء استعادة كلمة المرور", 500));
+  }
 };
 
 // verifyResetCode

@@ -2,10 +2,7 @@ import Subscription from "../models/subscription.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { refundPayment } from "../utils/moyasarPayment.js";
-import {
-  deactivateGeneralSubscription,
-  deactivateBootcampSubscription,
-} from "../utils/syncSubscription.js";
+import { deactivateGeneralSubscription } from "../utils/syncSubscription.js";
 
 export const cancelSubscription = async (req, res, next) => {
   try {
@@ -51,17 +48,8 @@ export const cancelSubscription = async (req, res, next) => {
       refundMessage = "لم يتم العثور على تفاصيل الدفع الخاصة بهذا الاشتراك.";
     }
 
-    if (subscription.type === "general") {
-      // deactivate general subscription
-      await deactivateGeneralSubscription(userId, subscription._id);
-    } else if (subscription.type === "bootcamp") {
-      // deactivate bootcamp subscription
-      await deactivateBootcampSubscription(
-        userId,
-        subscription.bootcamp,
-        subscription._id,
-      );
-    }
+    // Deactivate the general subscription
+    await deactivateGeneralSubscription(userId, subscription._id);
 
     subscription.canceled = true;
     subscription.canceledAt = Date.now();

@@ -56,15 +56,14 @@ const getOneModule = async (req, res, next) => {
       return next(new ApiError("No module found with this id.", 404));
     }
 
-    // check if the content is in learning model
+    // Check if the user is enrolled in this content (course or bootcamp)
     const learning = await Learning.findOne({
       user: req.user._id,
       content: contentId,
-      type: "course",
     });
 
     if (!learning) {
-      return next(new ApiError("You are not enrolled in this course.", 400));
+      return next(new ApiError("You are not enrolled in this content.", 400));
     }
 
     // update learning progress
@@ -159,15 +158,17 @@ const addCourseModule = async (req, res, next) => {
 
     await content.save();
 
+    const savedModule = content.modules[content.modules.length - 1];
+
     res.status(201).json({
       status: "success",
       message: "Module Added Successfully!",
       data: {
-        _id: content.modules[content.modules.length - 1]._id,
-        title,
-        description,
-        moduleType,
-        order: (content.modules.length ?? 0) + 1,
+        _id: savedModule._id,
+        title: savedModule.title,
+        description: savedModule.description,
+        moduleType: savedModule.moduleType,
+        order: savedModule.order,
         ...dataObj,
       },
     });

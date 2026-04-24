@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
 import slugify from "slugify";
 import { Content } from "../models/content.model.js";
+import User from "../models/user.model.js";
 import FinalProjectAnswer from "../models/finalProjectAnswer.model.js";
 import { ApiError } from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
@@ -13,7 +13,7 @@ const getContents = async (req, res, next) => {
     if (req.params.categoryId) filter = { category: req.params.categoryId };
 
     // Build the query
-    const numOfDocument = await Content.countDocuments();
+    const numOfDocument = await Content.countDocuments(filter);
     const apiFeatures = new ApiFeatures(Content.find(filter), req.query)
       .paginate(numOfDocument)
       .filter()
@@ -34,8 +34,8 @@ const getContents = async (req, res, next) => {
       data: docs,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error fetching contents", 500));
   }
 };
 
@@ -67,8 +67,8 @@ const getContent = async (req, res, next) => {
       data: content,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error fetching content", 500));
   }
 };
 
@@ -137,11 +137,11 @@ const createContent = async (req, res, next) => {
       data: newContent,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     if (error.name === "ValidationError" || error.name === "CastError") {
       return next(new ApiError(error.message, 400));
     }
-    next(new ApiError(error, 500));
+    next(new ApiError(error.message || "Error creating content", 500));
   }
 };
 
@@ -186,9 +186,8 @@ const updateContent = async (req, res, next) => {
       );
     }
 
-    const updatedContent = await Content.findByIdAndUpdate(
-      contentId,
-      {
+    const updates = Object.fromEntries(
+      Object.entries({
         title,
         slug,
         category,
@@ -207,7 +206,11 @@ const updateContent = async (req, res, next) => {
         startDate,
         endDate,
         totalProjects,
-      },
+      }).filter(([, v]) => v !== undefined),
+    );
+    const updatedContent = await Content.findByIdAndUpdate(
+      contentId,
+      { $set: updates },
       { returnDocument: "after" },
     );
 
@@ -217,8 +220,8 @@ const updateContent = async (req, res, next) => {
       data: updatedContent,
     });
   } catch (error) {
-    console.log(error);
-    next(new ApiError(error, 500));
+    console.error(error);
+    next(new ApiError(error.message || "Error updating content", 500));
   }
 };
 
@@ -226,13 +229,17 @@ const deleteContent = async (req, res, next) => {
   try {
     const { contentId } = req.params;
 
-    const content = await Content.findByIdAndDelete(contentId);
+    // Find first to confirm existence and capture instructor reference
+    const content = await Content.findById(contentId);
     if (!content) {
       return next(new ApiError("Content not found", 404));
     }
 
-    // Clean up all dependent records
+    // Clean up all dependent records before deleting the parent
     await cascadeDeleteContent(contentId);
+
+    // Delete the content document
+    await Content.findByIdAndDelete(contentId);
 
     // Also update the instructor's createdContent array
     await User.findByIdAndUpdate(content.instructor, {

@@ -108,14 +108,12 @@ export const changePasswordSchema = z.object({
       newPassword: trimString(z.string().min(6).max(100)),
       confirmNewPassword: trimString(z.string().min(6).max(100)),
     })
-    .strict()
-    .refine((data) => data.newPassword !== data.confirmNewPassword, {
-      message: "الباسوورد الجديد غير متطابق مع الباسوورد التأكيدي",
+    .refine((data) => data.newPassword === data.confirmNewPassword, {
+      message: "Passwords do not match",
       path: ["confirmNewPassword"],
     })
-    .refine((data) => data.newPassword === data.currentPassword, {
-      message:
-        "الباسوورد الجديد متطابق مع الباسوورد الحالي. الرجاء استخدام باسوورد مختلف",
+    .refine((data) => data.newPassword !== data.currentPassword, {
+      message: "New password cannot be the same as the current password",
       path: ["newPassword"],
     }),
 });

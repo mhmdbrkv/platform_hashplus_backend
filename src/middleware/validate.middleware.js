@@ -1,5 +1,6 @@
 import { ZodError } from "zod";
 import { ApiError } from "../utils/apiError.js";
+import { NODE_ENV } from "../config/env.js";
 
 const validate = (schema) => (req, res, next) => {
   try {
@@ -11,7 +12,7 @@ const validate = (schema) => (req, res, next) => {
     next();
   } catch (err) {
     if (err instanceof ZodError) {
-      console.log(err.issues);
+      if (NODE_ENV !== "production") console.log(err.issues);
 
       const message = Array.isArray(err.issues)
         ? err.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ")

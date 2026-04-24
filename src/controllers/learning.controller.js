@@ -7,8 +7,6 @@ const getMyLearning = async (req, res, next) => {
     const userId = req.user._id;
     const learning = await Learning.find({ user: userId });
 
-    if (!learning) return next(new ApiError("No learning found", 404));
-
     res.status(200).json({
       success: true,
       message: "data fetched successfully",
@@ -16,7 +14,7 @@ const getMyLearning = async (req, res, next) => {
       data: learning,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     next(new ApiError("Error fetching data", 500));
   }
 };
@@ -24,7 +22,7 @@ const getMyLearning = async (req, res, next) => {
 const addToMyLearning = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const { contentId } = req.body;
+    const { contentId } = req.params;
     const content = await Content.findById(contentId);
     if (!content) return next(new ApiError("Content not found", 404));
 
@@ -46,7 +44,7 @@ const addToMyLearning = async (req, res, next) => {
       data: newLearning,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     next(new ApiError("Error adding data", 500));
   }
 };
@@ -69,7 +67,7 @@ const removeFromMyLearning = async (req, res, next) => {
       data: learning,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     next(new ApiError("Error deleting data", 500));
   }
 };
@@ -82,20 +80,26 @@ const updateProgress = async (req, res, next) => {
 
     const learning = await Learning.findOneAndUpdate(
       { user: userId, content: contentId },
-      {
-        $inc: { progress: progress },
-        $max: { progress: 100 },
-        $min: { progress: 0 },
-      },
+      [
+        {
+          $set: {
+            progress: {
+              $min: [100, { $max: [0, { $add: ["$progress", progress] }] }],
+            },
+          },
+        },
+      ],
       { returnDocument: "after" },
     );
 
-    if (learning.progress === 100) {
-      learning.status = "completed";
-      learning.completedAt = Date.now();
-    }
+    if (!learning) return next(new ApiError("Learning record not found", 404));
 
-    await learning.save();
+    if (learning.progress === 100 && learning.status !== "completed") {
+      await Learning.findByIdAndUpdate(learning._id, {
+        status: "completed",
+        completedAt: new Date(),
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -103,7 +107,7 @@ const updateProgress = async (req, res, next) => {
       data: learning,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     next(new ApiError("Error updating data", 500));
   }
 };

@@ -1,6 +1,7 @@
 // import sharp from "sharp";
 import User from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
+import { cascadeDeleteUser } from "../utils/cascadeDelete.js";
 import { sanitizedUser } from "../utils/dataSanitizer.js";
 import { generateAccessToken } from "../utils/jwtToken.js";
 import { sendEmail } from "../utils/sendEmail.js";
@@ -38,6 +39,9 @@ const updateMyProfile = async (req, res, next) => {
       studentDetails,
     } = req.body;
 
+    const user = await User.findById(_id);
+    if (!user) return next(new ApiError("User not found", 404));
+
     const updatedUser = await User.findByIdAndUpdate(
       _id,
       {
@@ -48,8 +52,12 @@ const updateMyProfile = async (req, res, next) => {
         links,
         experience,
         education,
-        instructorDetails,
-        studentDetails,
+        instructorDetails:
+          user.role === "instructor"
+            ? instructorDetails
+            : user.instructorDetails || {},
+        studentDetails:
+          user.role === "student" ? studentDetails : user.studentDetails || {},
       },
       { returnDocument: "after", select: "-password" },
     ).lean();
@@ -69,12 +77,12 @@ const updateMyProfile = async (req, res, next) => {
 const deleteMyProfile = async (req, res, next) => {
   try {
     const { _id } = req.user;
+
+    // Delete user and all related data
+    await cascadeDeleteUser(_id);
     await User.findByIdAndDelete(_id);
 
-    return res.status(204).json({
-      status: "success",
-      message: "تم حذف الحساب وكل البيانات المرتبطة به بنجاح.",
-    });
+    return res.status(204).end();
   } catch (error) {
     console.error(error);
     next(new ApiError("حدث خطأ أثناء حذف الملف الشخصي", 500));

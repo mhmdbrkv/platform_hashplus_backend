@@ -7,12 +7,6 @@ const isObjectId = (schema, fieldName = "ID") =>
     `${fieldName} must be a valid MongoDB ID`,
   );
 
-export const addToMyLearningSchemam = z.object({
-  body: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-  }),
-});
-
 export const updateProgressSchema = z.object({
   body: z.object({
     progress: z.coerce.number().min(0).max(100),

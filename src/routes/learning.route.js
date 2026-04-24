@@ -13,16 +13,17 @@ import { checkSubscription } from "../middleware/subscription.middleware.js";
 
 import validate from "../middleware/validate.middleware.js";
 import { mongoIdSchema } from "../validators/common.validator.js";
-import {
-  addToMyLearningSchemam,
-  updateProgressSchema,
-} from "../validators/learning.validator.js";
+import { updateProgressSchema } from "../validators/learning.validator.js";
 
 router.use(guard, allowedTo("student"));
 
 // development routes
 router.get("/", getMyLearning);
-router.post("/", validate(addToMyLearningSchemam), addToMyLearning);
+router.post(
+  "/:contentId",
+  validate(mongoIdSchema("contentId")),
+  addToMyLearning,
+);
 
 router.delete(
   "/:contentId",
