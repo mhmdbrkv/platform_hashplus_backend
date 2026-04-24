@@ -1,5 +1,6 @@
 import express from "express";
 const router = express.Router();
+import { NODE_ENV } from "../config/env.js";
 
 import {
   getMyLearning,
@@ -15,31 +16,31 @@ import validate from "../middleware/validate.middleware.js";
 import { mongoIdSchema } from "../validators/common.validator.js";
 import { updateProgressSchema } from "../validators/learning.validator.js";
 
+const subCheck = NODE_ENV === "production" ? [checkSubscription] : [];
+
 router.use(guard, allowedTo("student"));
 
 // development routes
 router.get("/", getMyLearning);
+
+// production routes
 router.post(
   "/:contentId",
   validate(mongoIdSchema("contentId")),
+  ...subCheck,
   addToMyLearning,
 );
-
 router.delete(
   "/:contentId",
   validate(mongoIdSchema("contentId")),
+  ...subCheck,
   removeFromMyLearning,
 );
-
 router.patch(
   "/:contentId/progress",
   validate(updateProgressSchema),
+  ...subCheck,
   updateProgress,
 );
-
-// production routes
-// router.post("/:contentId", checkSubscription, addToMyLearning);
-// router.delete("/:contentId", checkSubscription, removeFromMyLearning);
-// router.patch("/:contentId/progress", checkSubscription, updateProgress);
 
 export default router;
