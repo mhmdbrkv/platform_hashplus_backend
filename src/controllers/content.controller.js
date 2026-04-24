@@ -172,6 +172,14 @@ const updateContent = async (req, res, next) => {
       ? slugify(title, { lower: true, trim: true })
       : undefined;
 
+    if (slug) {
+      const existing = await Content.findOne({ slug, _id: { $ne: contentId } });
+      if (existing)
+        return next(
+          new ApiError("A content with this title already exists", 400),
+        );
+    }
+
     const content = await Content.findById(contentId);
     if (!content) {
       return next(new ApiError("Content not found", 404));

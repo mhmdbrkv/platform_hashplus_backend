@@ -71,19 +71,19 @@ export const addCourseModuleSchema = z.object({
         .optional(),
     })
     .refine(
-      (data) => data.moduleType === "video" && data.videoData !== undefined,
+      (data) => data.moduleType === "video" || data.videoData !== undefined,
       "videoData is required for video modules",
     )
     .refine(
-      (data) => data.moduleType === "quiz" && data.quizData !== undefined,
+      (data) => data.moduleType === "quiz" || data.quizData !== undefined,
       "quizData is required for quiz modules",
     )
     .refine(
-      (data) => data.moduleType === "task" && data.taskData !== undefined,
+      (data) => data.moduleType === "task" || data.taskData !== undefined,
       "taskData is required for task modules",
     )
     .refine(
-      (data) => data.moduleType === "link" && data.linkData !== undefined,
+      (data) => data.moduleType === "link" || data.linkData !== undefined,
       "linkData is required for link modules",
     ),
   params: z.object({
@@ -143,19 +143,19 @@ export const updateOneCourseModuleSchema = z.object({
         .optional(),
     })
     .refine(
-      (data) => data.moduleType === "video" && data.videoData !== undefined,
+      (data) => data.moduleType === "video" || data.videoData !== undefined,
       "videoData is required for video modules",
     )
     .refine(
-      (data) => data.moduleType === "quiz" && data.quizData !== undefined,
+      (data) => data.moduleType === "quiz" || data.quizData !== undefined,
       "quizData is required for quiz modules",
     )
     .refine(
-      (data) => data.moduleType === "task" && data.taskData !== undefined,
+      (data) => data.moduleType === "task" || data.taskData !== undefined,
       "taskData is required for task modules",
     )
     .refine(
-      (data) => data.moduleType === "link" && data.linkData !== undefined,
+      (data) => data.moduleType === "link" || data.linkData !== undefined,
       "linkData is required for link modules",
     ),
   params: z.object({

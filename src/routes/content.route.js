@@ -1,5 +1,6 @@
 import express from "express";
 const router = express.Router({ mergeParams: true });
+import { NODE_ENV } from "../config/env.js";
 
 import {
   getContents,
@@ -27,6 +28,10 @@ import {
 } from "../validators/common.validator.js";
 
 import validate from "../middleware/validate.middleware.js";
+
+const subCheck = NODE_ENV === "production" ? [checkSubscription] : [];
+const bootcampSubCheck =
+  NODE_ENV === "production" ? [checkBootCampSubscription] : [];
 
 import reviewRoute from "./review.route.js";
 import moduleRoute from "./module.route.js";
@@ -72,29 +77,15 @@ router.patch(
   "/:contentId/final-project/course",
   allowedTo("student"),
   validate(completeFinalProjectSchema),
+  ...subCheck,
   completeFinalProject,
 );
 router.patch(
   "/:contentId/final-project/bootcamp",
   allowedTo("student"),
   validate(completeFinalProjectSchema),
+  ...bootcampSubCheck,
   completeFinalProject,
 );
-
-// production ready
-// router.patch(
-//   "/:contentId/final-project/course",
-//   allowedTo("student"),
-//   validate(completeFinalProjectSchema),
-//   checkSubscription,
-//   completeFinalProject,
-// );
-// router.patch(
-//   "/:contentId/final-project/bootcamp",
-//   allowedTo("student"),
-//   validate(completeFinalProjectSchema),
-//   checkBootCampSubscription,
-//   completeFinalProject,
-// );
 
 export default router;

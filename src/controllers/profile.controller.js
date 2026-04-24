@@ -42,9 +42,8 @@ const updateMyProfile = async (req, res, next) => {
     const user = await User.findById(_id);
     if (!user) return next(new ApiError("User not found", 404));
 
-    const updatedUser = await User.findByIdAndUpdate(
-      _id,
-      {
+    const updates = Object.fromEntries(
+      Object.entries({
         name,
         bio,
         languages,
@@ -54,11 +53,18 @@ const updateMyProfile = async (req, res, next) => {
         education,
         instructorDetails:
           user.role === "instructor"
-            ? instructorDetails
-            : user.instructorDetails || {},
+            ? { ...(user.instructorDetails || {}), ...instructorDetails }
+            : user.instructorDetails || undefined,
         studentDetails:
-          user.role === "student" ? studentDetails : user.studentDetails || {},
-      },
+          user.role === "student"
+            ? { ...(user.studentDetails || {}), ...studentDetails }
+            : user.studentDetails || undefined,
+      }).filter(([, v]) => v !== undefined),
+    );
+
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      { $set: updates },
       { returnDocument: "after", select: "-password" },
     ).lean();
 

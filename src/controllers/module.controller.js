@@ -47,7 +47,7 @@ const getOneModule = async (req, res, next) => {
     const content = await Content.findById(contentId);
 
     if (!content) {
-      return next(new ApiError("No module found with this id.", 404));
+      return next(new ApiError("No content found with this id.", 404));
     }
 
     const module = content.modules.id(moduleId);
@@ -357,7 +357,7 @@ const answerCourseModule = async (req, res, next) => {
         }
       }
 
-      quizAnswers.score = score;
+      quizAnswers.score = Math.round((score / quizArray.length) * 100);
       quizAnswers.status = score >= quizArray.length / 2 ? "pass" : "fail";
 
       await quizAnswers.save();
