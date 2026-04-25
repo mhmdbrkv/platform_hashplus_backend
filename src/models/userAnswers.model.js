@@ -25,6 +25,9 @@ const userAnswersSchema = new mongoose.Schema(
 const courseQuizAnswersSchema = new mongoose.Schema({
   answers: [
     {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
       question: {
         type: String,
         required: true,

@@ -165,6 +165,7 @@ const videoModuleSchema = new mongoose.Schema({
 const quizModuleSchema = new mongoose.Schema({
   quiz: [
     {
+      _id: mongoose.Schema.Types.ObjectId,
       question: { type: String, required: true, trim: true },
       options: { type: [String], required: true },
       // ✅ answer excluded from API responses by default

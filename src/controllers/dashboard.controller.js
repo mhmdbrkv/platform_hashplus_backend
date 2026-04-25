@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import ApiFeatures from "../utils/apiFeatures.js";
 import { ApiError } from "../utils/apiError.js";
 import User from "../models/user.model.js";
@@ -11,15 +12,15 @@ import Review from "../models/review.model.js";
 // Get Dashboard Stats
 const getDashboardStats = async (req, res, next) => {
   try {
-    const studentsCount = await User.countDocuments({ role: "student" });
-    const instructorsCount = await User.countDocuments({ role: "instructor" });
+    const [studentsCount, instructorsCount, coursesCount, bootcampsCount] =
+      await Promise.all([
+        User.countDocuments({ role: "student" }),
+        User.countDocuments({ role: "instructor" }),
+        Content.countDocuments({ contentType: "course" }),
+        Content.countDocuments({ contentType: "bootcamp" }),
+      ]);
+
     const usersCount = studentsCount + instructorsCount;
-    const coursesCount = await Content.countDocuments({
-      contentType: "course",
-    });
-    const bootcampsCount = await Content.countDocuments({
-      contentType: "bootcamp",
-    });
     const contentCount = coursesCount + bootcampsCount;
 
     const students = await User.find({ role: "student" })
@@ -151,16 +152,15 @@ const getDashboardStats = async (req, res, next) => {
 // Get Dashboard Analytics
 const getDashboardAnalytics = async (req, res, next) => {
   try {
-    const coursesCount = await Content.countDocuments({
-      contentType: "course",
-    });
-    const bootcampsCount = await Content.countDocuments({
-      contentType: "bootcamp",
-    });
-    const contentCount = coursesCount + bootcampsCount;
+    const [coursesCount, bootcampsCount, studentsCount, instructorsCount] =
+      await Promise.all([
+        Content.countDocuments({ contentType: "course" }),
+        Content.countDocuments({ contentType: "bootcamp" }),
+        User.countDocuments({ role: "student" }),
+        User.countDocuments({ role: "instructor" }),
+      ]);
 
-    const studentsCount = await User.countDocuments({ role: "student" });
-    const instructorsCount = await User.countDocuments({ role: "instructor" });
+    const contentCount = coursesCount + bootcampsCount;
     const usersCount = studentsCount + instructorsCount;
 
     const popularCategories = await Content.aggregate([
@@ -433,7 +433,6 @@ const getAllContent = async (req, res, next) => {
   }
 };
 
-// Get Content By ID (Admin Only)
 const getContentById = async (req, res, next) => {
   try {
     const { contentId } = req.params;
@@ -441,21 +440,68 @@ const getContentById = async (req, res, next) => {
     const content = await Content.findById(contentId).lean();
     if (!content) return next(new ApiError("Content not found", 404));
 
-    const [contentLearning, contentRating] = await Promise.all([
-      Learning.find({ content: contentId })
-        .populate("user", "_id name email isSubscribed")
-        .lean(),
-      Review.find({ content: contentId })
-        .populate("user", "_id name email isSubscribed")
-        .lean(),
+    // Calculate metadata separately
+    const metadataAgg = await Learning.aggregate([
+      { $match: { content: new mongoose.Types.ObjectId(contentId) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDoc",
+        },
+      },
+      { $unwind: "$userDoc" },
+      { $match: { "userDoc.isSubscribed": true } },
+      {
+        $group: {
+          _id: null,
+          totalStudents: { $sum: 1 },
+          totalCompleted: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          },
+          totalInProgress: {
+            $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] },
+          },
+        },
+      },
     ]);
+
+    const meta = metadataAgg[0] || {
+      totalStudents: 0,
+      totalCompleted: 0,
+      totalInProgress: 0,
+    };
+
+    // Use ApiFeatures for students list (paginated, sorted, filtered)
+    const numOfDocument = await Learning.countDocuments({ content: contentId });
+    const apiFeatures = new ApiFeatures(
+      Learning.find({ content: contentId }).populate(
+        "user",
+        "_id name email isSubscribed",
+      ),
+      req.query,
+    )
+      .paginate(numOfDocument)
+      .filter()
+      .sort();
+
+    const { mongooseQuery, pagination } = apiFeatures;
+    const contentLearning = await mongooseQuery.lean();
+
+    const userIds = contentLearning
+      .map((learn) => learn.user?._id)
+      .filter(Boolean);
+
+    const contentRating = await Review.find({
+      content: contentId,
+      user: { $in: userIds },
+    }).lean();
 
     const studentsMap = {};
 
-    // Seed map with learning data (status + progress)
-    // learn.user is already populated via Learning model middleware
     contentLearning.forEach((learn) => {
-      if (learn.user.isSubscribed) {
+      if (learn.user && learn.user.isSubscribed) {
         const userId = learn.user._id.toString();
         studentsMap[userId] = {
           _id: learn.user._id,
@@ -469,44 +515,24 @@ const getContentById = async (req, res, next) => {
       }
     });
 
-    // Merge review data into existing entries, or add new entries for review-only users
-    // review.user is already populated via Review model middleware
     contentRating.forEach((review) => {
-      if (review.user.isSubscribed) {
-        const userId = review.user._id.toString();
-        if (studentsMap[userId]) {
-          studentsMap[userId].rating = review.rating;
-          studentsMap[userId].review = review.review;
-        } else {
-          studentsMap[userId] = {
-            _id: review.user._id,
-            name: review.user.name,
-            email: review.user.email,
-            status: null,
-            progress: null,
-            rating: review.rating,
-            review: review.review,
-          };
-        }
+      const userId = review.user.toString();
+      if (studentsMap[userId]) {
+        studentsMap[userId].rating = review.rating;
+        studentsMap[userId].review = review.review;
       }
     });
 
     const students = Object.values(studentsMap);
-    const totalStudents = students.length;
-    const totalCompletedStudents = contentLearning.filter(
-      (learn) => learn.status === "completed" && learn.user.isSubscribed,
-    ).length;
-    const totalInProgressStudents = contentLearning.filter(
-      (learn) => learn.status === "in-progress" && learn.user.isSubscribed,
-    ).length;
 
     res.status(200).json({
       status: "success",
       message: "تم جلب المحتوى بنجاح",
+      pagination,
       data: {
-        totalStudents,
-        totalCompletedStudents,
-        totalInProgressStudents,
+        totalStudents: meta.totalStudents,
+        totalCompletedStudents: meta.totalCompleted,
+        totalInProgressStudents: meta.totalInProgress,
         content,
         students,
       },

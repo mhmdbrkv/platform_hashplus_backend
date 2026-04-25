@@ -28,20 +28,21 @@ export const deactivateGeneralSubscription = async (
     ? { _id: subscriptionId }
     : { user: userId, type: "general", isActive: true };
 
-  await Promise.all([
-    Subscription.updateMany(subFilter, {
-      $set: {
-        isActive: false,
-        canceled: true,
-        canceledAt: new Date(),
-      },
-    }),
-    User.findByIdAndUpdate(userId, {
+  const sub = await Subscription.updateMany(subFilter, {
+    $set: {
+      isActive: false,
+      canceled: true,
+      canceledAt: new Date(),
+    },
+  });
+
+  if (sub.modifiedCount > 0) {
+    await User.findByIdAndUpdate(userId, {
       isSubscribed: false,
       subscriptionStartDate: null,
       subscriptionEndDate: null,
-    }),
-  ]);
+    });
+  }
 };
 
 /**

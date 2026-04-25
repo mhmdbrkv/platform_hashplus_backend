@@ -90,6 +90,11 @@ const signup = async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
+
+    if (error.code === 11000) {
+      return next(new ApiError("البريد الإلكتروني مستخدم من قبل", 400));
+    }
+
     return next(new ApiError("حدث خطأ اثناء إنشاء المستخدم", 500));
   }
 };
@@ -169,9 +174,10 @@ const requestOtp = async (req, res, next) => {
 // verify otp
 const verifyOtp = async (req, res, next) => {
   try {
-    const { otp } = req.body;
+    const { otp, email } = req.body;
 
     const user = await User.findOne({
+      email,
       otpCode: crypto
         .createHash("sha256")
         .update(String(otp).trim())
@@ -446,9 +452,10 @@ const forgotPassword = async (req, res, next) => {
 // verifyResetCode
 const verifyResetCode = async (req, res, next) => {
   try {
-    const { resetCode } = req.body;
+    const { resetCode, email } = req.body;
 
     const user = await User.findOne({
+      email,
       passResetCode: crypto
         .createHash("sha256")
         .update(String(resetCode).trim())

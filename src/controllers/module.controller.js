@@ -307,9 +307,7 @@ const answerCourseModule = async (req, res, next) => {
       for (const quiz of quizArray) {
         if (
           !answers.some(
-            (answer) =>
-              answer.question.toLowerCase().trim() ===
-              quiz.question.toLowerCase().trim(),
+            (answer) => answer._id.toString() === quiz._id.toString(),
           )
         ) {
           return next(
@@ -344,9 +342,7 @@ const answerCourseModule = async (req, res, next) => {
       let score = 0;
       for (const quiz of quizArray) {
         const answer = answers.find(
-          (answer) =>
-            answer.question.toLowerCase().trim() ===
-            quiz.question.toLowerCase().trim(),
+          (answer) => answer._id.toString() === quiz._id.toString(),
         );
         if (
           answer &&
@@ -357,15 +353,19 @@ const answerCourseModule = async (req, res, next) => {
         }
       }
 
-      quizAnswers.score = Math.round((score / quizArray.length) * 100);
-      quizAnswers.status = score >= quizArray.length / 2 ? "pass" : "fail";
-
-      await quizAnswers.save();
+      const updatedAnswers = await CourseQuizAnswers.findByIdAndUpdate(
+        quizAnswers._id,
+        {
+          score: Math.round((score / quizArray.length) * 100),
+          status: score >= quizArray.length / 2 ? "pass" : "fail",
+        },
+        { returnDocument: "after" },
+      );
 
       res.status(201).json({
         status: "success",
         message: "Answers saved successfully!",
-        data: quizAnswers,
+        data: updatedAnswers,
       });
     } else {
       return next(new ApiError("Module type is not valid.", 400));
