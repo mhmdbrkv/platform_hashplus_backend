@@ -20,9 +20,9 @@ export const paginationSchema = z.object({
     .object({
       page: z.coerce.number().default(1),
       limit: z.coerce.number().default(10),
-      sort: z.string().optional(),
-      fields: z.array(z.string()).optional(),
-      keyword: z.string().optional(),
+      sort: z.string().trim().toLowerCase(),
+      fields: z.array(z.string().trim()),
+      keyword: z.string().trim(),
     })
-    .optional(),
+    .partial(),
 });

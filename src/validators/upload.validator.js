@@ -1,11 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
 
-const trimString = (schema) =>
-  schema
-    .transform((value) => value.trim())
-    .refine((value) => value.length > 0, "Required");
-
 const isObjectId = (schema, fieldName = "ID") =>
   schema.refine(
     (value) => mongoose.isValidObjectId(value),
@@ -13,30 +8,36 @@ const isObjectId = (schema, fieldName = "ID") =>
   );
 
 export const startUploadSchema = z.object({
-  body: z.object({
-    fileName: trimString(z.string()),
-    fileType: trimString(z.string()),
-    userId: isObjectId(z.string(), "userId"),
-    partsCount: z.coerce.number().int().min(1).max(10000),
-  }),
+  body: z
+    .object({
+      fileName: z.string().trim().min(3).max(255),
+      fileType: z.string().trim().min(3).max(255),
+      userId: isObjectId(z.string(), "userId"),
+      partsCount: z.coerce.number().int().min(1).max(10000),
+    })
+    .strict(),
 });
 
 export const completeUploadSchema = z.object({
-  body: z.object({
-    key: trimString(z.string()),
-    uploadId: trimString(z.string()),
-    parts: z.array(
-      z.object({
-        PartNumber: z.coerce.number().int().min(1).max(10000),
-        ETag: trimString(z.string()),
-      }),
-    ),
-  }),
+  body: z
+    .object({
+      key: z.string().trim().min(3).max(255),
+      uploadId: z.string().trim().min(3).max(255),
+      parts: z.array(
+        z.object({
+          PartNumber: z.coerce.number().int().min(1).max(10000),
+          ETag: z.string().trim().min(3).max(255),
+        }),
+      ),
+    })
+    .strict(),
 });
 
 export const removeUploadSchema = z.object({
-  body: z.object({
-    key: trimString(z.string()),
-    uploadId: trimString(z.string()),
-  }),
+  body: z
+    .object({
+      key: z.string().trim().min(3).max(255),
+      uploadId: z.string().trim().min(3).max(255),
+    })
+    .strict(),
 });

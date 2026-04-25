@@ -8,10 +8,17 @@ const isObjectId = (schema, fieldName = "ID") =>
   );
 
 export const updateProgressSchema = z.object({
-  body: z.object({
-    progress: z.coerce.number().min(0).max(100),
-  }),
-  params: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-  }),
+  body: z
+    .object({
+      progress: z.coerce.number().min(0).max(100),
+    })
+    .strict()
+    .refine((data) => Object.keys(data).length > 0, {
+      message: "At least one field is required",
+    }),
+  params: z
+    .object({
+      contentId: isObjectId(z.string(), "contentId"),
+    })
+    .strict(),
 });

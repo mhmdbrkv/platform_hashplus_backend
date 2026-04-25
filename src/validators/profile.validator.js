@@ -1,11 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
 
-const trimString = (schema) =>
-  schema
-    .transform((value) => value.trim())
-    .refine((value) => value.length > 0, "Required");
-
 const isObjectId = (schema, fieldName = "ID") =>
   schema.refine(
     (value) => mongoose.isValidObjectId(value),
@@ -13,107 +8,99 @@ const isObjectId = (schema, fieldName = "ID") =>
   );
 
 export const updateMyProfileSchema = z.object({
-  body: z.object({
-    name: trimString(z.string().min(3).max(100)).optional(),
-    bio: trimString(z.string().min(3).max(100)).optional(),
-    languages: z
-      .array(
+  body: z
+    .object({
+      name: z.string().trim().min(3).max(100),
+      bio: z.string().trim().min(3).max(100),
+      languages: z.array(
         z.object({
-          language: trimString(z.string().min(3).max(100)),
-          proficiency: trimString(z.string().min(3).max(100)),
+          language: z.string().trim().min(3).max(100),
+          proficiency: z.string().trim().min(3).max(100),
         }),
-      )
-      .optional(),
-    skills: z.array(trimString(z.string())).optional(),
-    links: z
-      .array(
+      ),
+      skills: z.array(z.string().trim()),
+      links: z.array(
         z.object({
-          name: trimString(z.string().min(3).max(100)),
-          url: trimString(z.url()),
+          name: z.string().trim().min(3).max(100),
+          url: z.url().trim(),
         }),
-      )
-      .optional(),
-    experience: z
-      .array(
+      ),
+      experience: z.array(
         z.object({
-          company: trimString(z.string().min(3).max(100)),
-          country: trimString(z.string().min(3).max(100)),
-          city: trimString(z.string().min(3).max(100)),
-          jobTitle: trimString(z.string().min(3).max(100)),
-          jobType: trimString(z.string().min(3).max(100)),
-          jobStyle: trimString(z.string().min(3).max(100)),
+          company: z.string().trim().min(3).max(100),
+          country: z.string().trim().min(3).max(100),
+          city: z.string().trim().min(3).max(100),
+          jobTitle: z.string().trim().min(3).max(100),
+          jobType: z.string().trim().min(3).max(100),
+          jobStyle: z.string().trim().min(3).max(100),
           startDate: z.coerce.date(),
           endDate: z.coerce.date(),
-          skills: z.array(trimString(z.string())).optional(),
-          description: trimString(z.string().min(3).max(100)),
+          skills: z.array(z.string().trim()),
+          description: z.string().trim().min(3).max(100),
           isCurrent: z.boolean(),
         }),
-      )
-      .optional(),
-    education: z
-      .array(
+      ),
+      education: z.array(
         z.object({
-          institution: trimString(z.string().min(3).max(100)),
-          degree: trimString(z.string().min(3).max(100)),
-          major: trimString(z.string().min(3).max(100)),
+          institution: z.string().trim().min(3).max(100),
+          degree: z.string().trim().min(3).max(100),
+          major: z.string().trim().min(3).max(100),
           startDate: z.coerce.date(),
           endDate: z.coerce.date(),
-          description: trimString(z.string().min(3).max(100)),
+          description: z.string().trim().min(3).max(100),
           isCurrent: z.boolean(),
         }),
-      )
-      .optional(),
-    instructorDetails: z
-      .object({
-        teachingStyle: trimString(z.string().min(3).max(100)),
-        videoProfessionality: trimString(z.string().min(3).max(100)),
-        targetAudience: trimString(z.string().min(3).max(100)),
-      })
-      .optional(),
-    studentDetails: z
-      .object({
-        projects: z
-          .array(
-            z.object({
-              title: trimString(z.string().min(3).max(100)),
-              description: trimString(z.string().min(3).max(100)),
-              roleInProject: trimString(z.string().min(3).max(100)),
-              skillsUsed: z.array(trimString(z.string())).optional(),
-              startDate: z.coerce.date(),
-              endDate: z.coerce.date(),
-              projectImageUrls: z.array(trimString(z.url())).optional(),
-            }),
-          )
-          .optional(),
-        certificates: z
-          .array(
-            z.object({
-              name: trimString(z.string().min(3).max(100)),
-              description: trimString(z.string().min(3).max(100)),
-              contentId: isObjectId(z.string(), "contentId"),
-              certificateUrl: trimString(z.url()),
-              issuedAt: z.coerce.date(),
-            }),
-          )
-          .optional(),
-      })
-      .optional(),
-  }),
+      ),
+      instructorDetails: z.object({
+        teachingStyle: z.string().trim().min(3).max(100),
+        videoProfessionality: z.string().trim().min(3).max(100),
+        targetAudience: z.string().trim().min(3).max(100),
+      }),
+      studentDetails: z.object({
+        projects: z.array(
+          z.object({
+            title: z.string().trim().min(3).max(100),
+            description: z.string().trim().min(3).max(100),
+            roleInProject: z.string().trim().min(3).max(100),
+            skillsUsed: z.array(z.string().trim()),
+            startDate: z.coerce.date(),
+            endDate: z.coerce.date(),
+            projectImageUrls: z.array(z.url().trim()),
+          }),
+        ),
+        certificates: z.array(
+          z.object({
+            name: z.string().trim().min(3).max(100),
+            description: z.string().trim().min(3).max(100),
+            contentId: isObjectId(z.string(), "contentId"),
+            certificateUrl: z.url().trim(),
+            issuedAt: z.coerce.date(),
+          }),
+        ),
+      }),
+    })
+    .strict()
+    .partial()
+    .refine(
+      (data) => Object.keys(data).length > 0,
+      "At least one field is required",
+    ),
 });
 
 export const changePasswordSchema = z.object({
   body: z
     .object({
-      currentPassword: trimString(z.string().min(6).max(100)),
-      newPassword: trimString(z.string().min(6).max(100)),
-      confirmNewPassword: trimString(z.string().min(6).max(100)),
+      currentPassword: z.string().trim().min(6).max(100),
+      newPassword: z.string().trim().min(6).max(100),
+      confirmNewPassword: z.string().trim().min(6).max(100),
     })
-    .refine((data) => data.newPassword === data.confirmNewPassword, {
-      message: "Passwords do not match",
-      path: ["confirmNewPassword"],
-    })
-    .refine((data) => data.newPassword !== data.currentPassword, {
-      message: "New password cannot be the same as the current password",
-      path: ["newPassword"],
-    }),
+    .strict()
+    .refine(
+      (data) => data.newPassword === data.confirmNewPassword,
+      "Passwords do not match",
+    )
+    .refine(
+      (data) => data.newPassword !== data.currentPassword,
+      "New password cannot be the same as the current password",
+    ),
 });

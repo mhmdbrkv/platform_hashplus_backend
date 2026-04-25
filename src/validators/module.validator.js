@@ -1,11 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
 
-const trimString = (schema) =>
-  schema
-    .transform((value) => value.trim())
-    .refine((value) => value.length > 0, "Required");
-
 const isObjectId = (schema, fieldName = "ID") =>
   schema.refine(
     (value) => mongoose.isValidObjectId(value),
@@ -13,26 +8,28 @@ const isObjectId = (schema, fieldName = "ID") =>
   );
 
 export const nestedModuleParamsSchema = z.object({
-  params: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-    moduleId: isObjectId(z.string(), "moduleId"),
-  }),
+  params: z
+    .object({
+      contentId: isObjectId(z.string(), "contentId"),
+      moduleId: isObjectId(z.string(), "moduleId"),
+    })
+    .strict(),
 });
 
 export const addCourseModuleSchema = z.object({
   body: z
     .object({
-      moduleType: z.enum(["video", "quiz", "task", "link"]).nonoptional(),
-      title: trimString(z.string()),
-      description: trimString(z.string()),
+      moduleType: z.enum(["video", "quiz", "task", "link"]),
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(100),
 
       videoData: z
         .object({
-          url: trimString(z.url()),
+          url: z.url().trim(),
           size: z.coerce.number(),
           duration: z.coerce.number(),
-          key: trimString(z.string()),
-          uploadId: trimString(z.string()),
+          key: z.string().trim(),
+          uploadId: z.string().trim(),
         })
         .optional(),
 
@@ -40,9 +37,9 @@ export const addCourseModuleSchema = z.object({
         .array(
           z
             .object({
-              question: trimString(z.string()),
-              options: z.array(trimString(z.string())),
-              answer: trimString(z.string()),
+              question: z.string().trim().min(3).max(100),
+              options: z.array(z.string().trim().min(3).max(100)),
+              answer: z.string().trim().min(3).max(100),
             })
             .refine((data) => data.options.length >= 2, {
               message: "Options must be at least two",
@@ -54,22 +51,22 @@ export const addCourseModuleSchema = z.object({
             }),
         )
         .optional(),
-
       taskData: z
         .object({
-          url: trimString(z.url()),
-          imageUrl: trimString(z.url()),
-          description: trimString(z.string()),
+          url: z.url().trim(),
+          imageUrl: z.url().trim(),
+          description: z.string().trim().min(3).max(100),
         })
         .optional(),
 
       linkData: z
         .object({
-          url: trimString(z.url()),
+          url: z.url().trim(),
           date: z.coerce.date(),
         })
         .optional(),
     })
+    .strict()
     .refine(
       (data) => data.moduleType === "video" || data.videoData !== undefined,
       "videoData is required for video modules",
@@ -86,62 +83,59 @@ export const addCourseModuleSchema = z.object({
       (data) => data.moduleType === "link" || data.linkData !== undefined,
       "linkData is required for link modules",
     ),
-  params: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-  }),
+  params: z
+    .object({
+      contentId: isObjectId(z.string(), "contentId"),
+    })
+    .strict(),
 });
 
 export const updateOneCourseModuleSchema = z.object({
   body: z
     .object({
-      moduleType: z.enum(["video", "quiz", "task", "link"]).nonoptional(),
-      title: trimString(z.string()).optional(),
-      description: trimString(z.string()).optional(),
+      moduleType: z.enum(["video", "quiz", "task", "link"]),
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(100),
 
-      videoData: z
-        .object({
-          url: trimString(z.url()).optional(),
-          size: z.coerce.number().optional(),
-          duration: z.coerce.number().optional(),
-          key: trimString(z.string()).optional(),
-          uploadId: trimString(z.string()).optional(),
-        })
-        .optional(),
-
-      quizData: z
-        .array(
-          z
-            .object({
-              question: trimString(z.string()).optional(),
-              options: z.array(trimString(z.string())).optional(),
-              answer: trimString(z.string()).optional(),
-            })
-            .refine((data) => data.options.length >= 2, {
-              message: "Options must be at least two",
-              path: ["options"],
-            })
-            .refine((data) => data.options.includes(data.answer), {
-              message: "Answer must be in options",
-              path: ["answer"],
-            }),
-        )
-        .optional(),
-
-      taskData: z
-        .object({
-          url: trimString(z.url()).optional(),
-          imageUrl: trimString(z.url()).optional(),
-          description: trimString(z.string()).optional(),
-        })
-        .optional(),
-
-      linkData: z
-        .object({
-          url: trimString(z.url()).optional(),
-          date: z.coerce.date().optional(),
-        })
-        .optional(),
+      videoData: z.object({
+        url: z.url().trim(),
+        size: z.coerce.number(),
+        duration: z.coerce.number(),
+        key: z.string().trim(),
+        uploadId: z.string().trim(),
+      }),
+      quizData: z.array(
+        z
+          .object({
+            question: z.string().trim().min(3).max(100),
+            options: z.array(z.string().trim().min(3).max(100)),
+            answer: z.string().trim().min(3).max(100),
+          })
+          .refine((data) => data.options.length >= 2, {
+            message: "Options must be at least two",
+            path: ["options"],
+          })
+          .refine((data) => data.options.includes(data.answer), {
+            message: "Answer must be in options",
+            path: ["answer"],
+          }),
+      ),
+      taskData: z.object({
+        url: z.url().trim(),
+        imageUrl: z.url().trim(),
+        description: z.string().trim().min(3).max(100),
+      }),
+      linkData: z.object({
+        url: z.url().trim(),
+        date: z.coerce.date(),
+      }),
     })
+    .strict()
+    .partial()
+    .refine(
+      (data) => Object.keys(data).length > 0,
+      "At least one field is required",
+    )
     .refine(
       (data) => data.moduleType === "video" || data.videoData !== undefined,
       "videoData is required for video modules",
@@ -158,40 +152,42 @@ export const updateOneCourseModuleSchema = z.object({
       (data) => data.moduleType === "link" || data.linkData !== undefined,
       "linkData is required for link modules",
     ),
-  params: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-    moduleId: isObjectId(z.string(), "moduleId"),
-  }),
+  params: z
+    .object({
+      contentId: isObjectId(z.string(), "contentId"),
+      moduleId: isObjectId(z.string(), "moduleId"),
+    })
+    .strict(),
 });
 
 export const addBootcampModuleSchema = z.object({
   body: z
     .object({
-      title: trimString(z.string()),
-      description: trimString(z.string()),
-      liveSession: trimString(z.url()),
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(100),
+      liveSession: z.url().trim(),
 
       video: z
         .object({
-          url: trimString(z.url()),
-          key: trimString(z.string()),
-          uploadId: trimString(z.string()),
+          url: z.url().trim(),
+          key: z.string().trim(),
+          uploadId: z.string().trim(),
           size: z.coerce.number(),
           duration: z.coerce.number(),
         })
         .optional(),
 
-      timeStart: trimString(z.string()),
-      timeEnd: trimString(z.string()),
-      timezone: trimString(z.string()),
+      timeStart: z.string().trim(),
+      timeEnd: z.string().trim(),
+      timezone: z.string().trim(),
 
       projects: z
         .array(
           z.object({
-            title: trimString(z.string()),
-            description: trimString(z.string()),
-            githubUrl: trimString(z.url()),
-            liveDemoUrl: trimString(z.url()),
+            title: z.string().trim().min(3).max(100),
+            description: z.string().trim().min(3).max(100),
+            githubUrl: z.url().trim(),
+            liveDemoUrl: z.url().trim(),
           }),
         )
         .optional(),
@@ -213,44 +209,49 @@ export const addBootcampModuleSchema = z.object({
           (p) => p.title && p.description && p.githubUrl && p.liveDemoUrl,
         ),
       "projects title, description, githubUrl and liveDemoUrl are required!",
-    ),
-  params: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-  }),
+    )
+    .strict(),
+  params: z
+    .object({
+      contentId: isObjectId(z.string(), "contentId"),
+    })
+    .strict(),
 });
 
 export const updateOneBootcampModuleSchema = z.object({
   body: z
     .object({
-      title: trimString(z.string()).optional(),
-      description: trimString(z.string()).optional(),
-      liveSession: trimString(z.url()).optional(),
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(100),
+      liveSession: z.url().trim(),
 
-      video: z
-        .object({
-          url: trimString(z.url()).optional(),
-          key: trimString(z.string()).optional(),
-          uploadId: trimString(z.string()).optional(),
-          size: z.coerce.number().optional(),
-          duration: z.coerce.number().optional(),
-        })
-        .optional(),
+      video: z.object({
+        url: z.url().trim(),
+        key: z.string().trim(),
+        uploadId: z.string().trim(),
+        size: z.coerce.number(),
+        duration: z.coerce.number(),
+      }),
 
-      timeStart: trimString(z.string()).optional(),
-      timeEnd: trimString(z.string()).optional(),
-      timezone: trimString(z.string()).optional(),
+      timeStart: z.string().trim(),
+      timeEnd: z.string().trim(),
+      timezone: z.string().trim(),
 
-      projects: z
-        .array(
-          z.object({
-            title: trimString(z.string()).optional(),
-            description: trimString(z.string()).optional(),
-            githubUrl: trimString(z.url()).optional(),
-            liveDemoUrl: trimString(z.url()).optional(),
-          }),
-        )
-        .optional(),
+      projects: z.array(
+        z.object({
+          title: z.string().trim().min(3).max(100),
+          description: z.string().trim().min(3).max(100),
+          githubUrl: z.url().trim(),
+          liveDemoUrl: z.url().trim(),
+        }),
+      ),
     })
+    .strict()
+    .partial()
+    .refine(
+      (data) => Object.keys(data).length > 0,
+      "At least one field is required",
+    )
     .refine(
       (data) =>
         data.video &&
@@ -269,23 +270,30 @@ export const updateOneBootcampModuleSchema = z.object({
         ),
       "projects title, description, githubUrl and liveDemoUrl are required!",
     ),
-  params: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-    moduleId: isObjectId(z.string(), "moduleId"),
-  }),
+  params: z
+    .object({
+      contentId: isObjectId(z.string(), "contentId"),
+      moduleId: isObjectId(z.string(), "moduleId"),
+    })
+    .strict(),
 });
 
 export const answerCourseModuleSchema = z.object({
   body: z.object({
     answers: z.array(
-      z.object({
-        question: trimString(z.string()),
-        answer: trimString(z.string()),
-      }),
+      z
+        .object({
+          question: z.string().trim().min(3).max(100),
+          answer: z.string().trim().min(3).max(100),
+        })
+        .strict(),
     ),
   }),
-  params: z.object({
-    contentId: isObjectId(z.string(), "contentId"),
-    moduleId: isObjectId(z.string(), "moduleId"),
-  }),
+
+  params: z
+    .object({
+      contentId: isObjectId(z.string(), "contentId"),
+      moduleId: isObjectId(z.string(), "moduleId"),
+    })
+    .strict(),
 });
