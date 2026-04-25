@@ -68,19 +68,19 @@ export const addCourseModuleSchema = z.object({
     })
     .strict()
     .refine(
-      (data) => data.moduleType === "video" || data.videoData !== undefined,
+      (data) => data.moduleType !== "video" || data.videoData !== undefined,
       "videoData is required for video modules",
     )
     .refine(
-      (data) => data.moduleType === "quiz" || data.quizData !== undefined,
+      (data) => data.moduleType !== "quiz" || data.quizData !== undefined,
       "quizData is required for quiz modules",
     )
     .refine(
-      (data) => data.moduleType === "task" || data.taskData !== undefined,
+      (data) => data.moduleType !== "task" || data.taskData !== undefined,
       "taskData is required for task modules",
     )
     .refine(
-      (data) => data.moduleType === "link" || data.linkData !== undefined,
+      (data) => data.moduleType !== "link" || data.linkData !== undefined,
       "linkData is required for link modules",
     ),
   params: z
@@ -94,62 +94,69 @@ export const updateOneCourseModuleSchema = z.object({
   body: z
     .object({
       moduleType: z.enum(["video", "quiz", "task", "link"]),
-      title: z.string().trim().min(3).max(100),
-      description: z.string().trim().min(3).max(100),
+      title: z.string().trim().min(3).max(100).optional(),
+      description: z.string().trim().min(3).max(100).optional(),
 
-      videoData: z.object({
-        url: z.url().trim(),
-        size: z.coerce.number(),
-        duration: z.coerce.number(),
-        key: z.string().trim(),
-        uploadId: z.string().trim(),
-      }),
-      quizData: z.array(
-        z
-          .object({
-            question: z.string().trim().min(3).max(100),
-            options: z.array(z.string().trim().min(3).max(100)),
-            answer: z.string().trim().min(3).max(100),
-          })
-          .refine((data) => data.options.length >= 2, {
-            message: "Options must be at least two",
-            path: ["options"],
-          })
-          .refine((data) => data.options.includes(data.answer), {
-            message: "Answer must be in options",
-            path: ["answer"],
-          }),
-      ),
-      taskData: z.object({
-        url: z.url().trim(),
-        imageUrl: z.url().trim(),
-        description: z.string().trim().min(3).max(100),
-      }),
-      linkData: z.object({
-        url: z.url().trim(),
-        date: z.coerce.date(),
-      }),
+      videoData: z
+        .object({
+          url: z.url().trim(),
+          size: z.coerce.number(),
+          duration: z.coerce.number(),
+          key: z.string().trim(),
+          uploadId: z.string().trim(),
+        })
+        .optional(),
+      quizData: z
+        .array(
+          z
+            .object({
+              question: z.string().trim().min(3).max(100),
+              options: z.array(z.string().trim().min(3).max(100)),
+              answer: z.string().trim().min(3).max(100),
+            })
+            .refine((data) => data.options.length >= 2, {
+              message: "Options must be at least two",
+              path: ["options"],
+            })
+            .refine((data) => data.options.includes(data.answer), {
+              message: "Answer must be in options",
+              path: ["answer"],
+            }),
+        )
+        .optional(),
+      taskData: z
+        .object({
+          url: z.url().trim(),
+          imageUrl: z.url().trim(),
+          description: z.string().trim().min(3).max(100),
+        })
+        .optional(),
+      linkData: z
+        .object({
+          url: z.url().trim(),
+          date: z.coerce.date(),
+        })
+        .optional(),
     })
     .strict()
-    .partial()
     .refine(
       (data) => Object.keys(data).length > 0,
       "At least one field is required",
     )
     .refine(
-      (data) => data.moduleType === "video" || data.videoData !== undefined,
+      (data) => data.moduleType !== "video" || data.videoData !== undefined,
       "videoData is required for video modules",
     )
     .refine(
-      (data) => data.moduleType === "quiz" || data.quizData !== undefined,
+      (data) => data.moduleType !== "quiz" || data.quizData !== undefined,
       "quizData is required for quiz modules",
     )
     .refine(
-      (data) => data.moduleType === "task" || data.taskData !== undefined,
+      (data) => data.moduleType !== "task" || data.taskData !== undefined,
       "taskData is required for task modules",
     )
     .refine(
-      (data) => data.moduleType === "link" || data.linkData !== undefined,
+      (data) => data.moduleType !== "link" || data.linkData !== undefined,
       "linkData is required for link modules",
     ),
   params: z
@@ -192,25 +199,8 @@ export const addBootcampModuleSchema = z.object({
         )
         .optional(),
     })
-    .refine(
-      (data) =>
-        data.video &&
-        data.video.url &&
-        data.video.key &&
-        data.video.duration &&
-        data.video.size,
-      "video url, key, duration and size are required!",
-    )
-    .refine(
-      (data) =>
-        data.projects &&
-        data.projects.length > 0 &&
-        data.projects.every(
-          (p) => p.title && p.description && p.githubUrl && p.liveDemoUrl,
-        ),
-      "projects title, description, githubUrl and liveDemoUrl are required!",
-    )
     .strict(),
+
   params: z
     .object({
       contentId: isObjectId(z.string(), "contentId"),
@@ -251,25 +241,8 @@ export const updateOneBootcampModuleSchema = z.object({
     .refine(
       (data) => Object.keys(data).length > 0,
       "At least one field is required",
-    )
-    .refine(
-      (data) =>
-        data.video &&
-        data.video.url &&
-        data.video.key &&
-        data.video.duration &&
-        data.video.size,
-      "video url, key, duration and size are required!",
-    )
-    .refine(
-      (data) =>
-        data.projects &&
-        data.projects.length > 0 &&
-        data.projects.every(
-          (p) => p.title && p.description && p.githubUrl && p.liveDemoUrl,
-        ),
-      "projects title, description, githubUrl and liveDemoUrl are required!",
     ),
+
   params: z
     .object({
       contentId: isObjectId(z.string(), "contentId"),

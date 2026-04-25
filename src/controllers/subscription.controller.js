@@ -51,10 +51,6 @@ export const cancelSubscription = async (req, res, next) => {
     // Deactivate the general subscription
     await deactivateGeneralSubscription(userId, subscription._id);
 
-    subscription.canceled = true;
-    subscription.canceledAt = Date.now();
-    await subscription.save();
-
     // send email to user
     try {
       await sendEmail({

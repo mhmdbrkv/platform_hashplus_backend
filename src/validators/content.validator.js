@@ -90,27 +90,28 @@ export const createContentSchema = z.object({
 export const updateContentSchema = z.object({
   body: z
     .object({
-      title: z.string().trim().min(3).max(200),
-      category: isObjectId(z.string(), "category"),
-      description: z.string().trim().min(10),
-      learningOutcomes: z.array(z.string().trim()).min(1),
-      prerequisites: z.array(z.string().trim()).min(1),
-      welcomeMessage: z.string().trim(),
-      congratulationsMessage: z.string().trim(),
-      level: z.enum(["beginner", "intermediate", "advanced"]),
-      language: z.enum(["ar", "en", "fr"]),
-      materials: z.array(z.string().trim()),
-      price: z.union([priceSchema, z.coerce.number().min(0)]),
+      contentType: z.enum(["course", "bootcamp"]),
+      title: z.string().trim().min(3).max(200).optional(),
+      category: isObjectId(z.string(), "category").optional(),
+      description: z.string().trim().min(10).optional(),
+      learningOutcomes: z.array(z.string().trim()).min(1).optional(),
+      prerequisites: z.array(z.string().trim()).min(1).optional(),
+      welcomeMessage: z.string().trim().optional(),
+      congratulationsMessage: z.string().trim().optional(),
+      level: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+      language: z.enum(["ar", "en", "fr"]).optional(),
+      materials: z.array(z.string().trim()).optional(),
+      price: z.union([priceSchema, z.coerce.number().min(0)]).optional(),
 
-      thumbnail: thumbnailSchema,
-      welcomeVideo: welcomeVideoSchema,
-      finalProject: finalProjectSchema,
+      thumbnail: thumbnailSchema.optional(),
+      welcomeVideo: welcomeVideoSchema.optional(),
+      finalProject: finalProjectSchema.optional(),
 
-      startDate: z.coerce.date(),
-      endDate: z.coerce.date(),
-      totalProjects: z.coerce.number(),
+      startDate: z.coerce.date().optional(),
+      endDate: z.coerce.date().optional(),
+      totalProjects: z.coerce.number().optional(),
     })
-    .partial()
+    .strict()
     .refine(
       (data) => {
         if (data.contentType === "bootcamp" && !data.startDate) {
@@ -133,8 +134,8 @@ export const updateContentSchema = z.object({
     .refine(
       (data) => Object.keys(data).length > 0,
       "At least one field is required",
-    )
-    .strict(),
+    ),
+
   params: z
     .object({
       contentId: isObjectId(z.string(), "contentId"),
