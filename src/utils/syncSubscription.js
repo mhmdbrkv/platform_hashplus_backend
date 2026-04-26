@@ -46,6 +46,27 @@ export const deactivateGeneralSubscription = async (
 };
 
 /**
+ * Cancels a user's general subscription so it does not renew, but keeps it active until expiry.
+ * @param {string|ObjectId} userId
+ * @param {string|ObjectId} [subscriptionId]
+ */
+export const cancelGeneralSubscription = async (
+  userId,
+  subscriptionId = null,
+) => {
+  const subFilter = subscriptionId
+    ? { _id: subscriptionId }
+    : { user: userId, type: "general", isActive: true };
+
+  await Subscription.updateMany(subFilter, {
+    $set: {
+      canceled: true,
+      canceledAt: new Date(),
+    },
+  });
+};
+
+/**
  * Activates a bootcamp subscription for a user.
  */
 export const activateBootcampSubscription = async (userId, bootcampId) => {

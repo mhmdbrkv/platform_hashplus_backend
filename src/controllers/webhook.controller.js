@@ -130,7 +130,7 @@ const moyasarWebhook = async (req, res) => {
 
     // Timing-safe comparison to prevent timing attacks
     const receivedToken = Buffer.from(event.secret_token || "");
-    const expectedToken = Buffer.from(MOYASAR_WEBHOOK_SECRET);
+    const expectedToken = Buffer.from(MOYASAR_WEBHOOK_SECRET || "");
 
     const isSecretValid =
       receivedToken.length === expectedToken.length &&
@@ -153,6 +153,11 @@ const moyasarWebhook = async (req, res) => {
           payment?.metadata || {};
 
         // 2. Look up User
+        if (!customer_id) {
+          console.error(`customer_id is missing for payment ${payment.id}`);
+          return;
+        }
+
         const user = await User.findById(customer_id);
         if (!user) {
           console.error(

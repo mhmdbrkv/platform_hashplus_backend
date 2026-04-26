@@ -2,7 +2,7 @@ import Subscription from "../models/subscription.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { refundPayment } from "../utils/moyasarPayment.js";
-import { deactivateGeneralSubscription } from "../utils/syncSubscription.js";
+import { deactivateGeneralSubscription, cancelGeneralSubscription } from "../utils/syncSubscription.js";
 
 export const cancelSubscription = async (req, res, next) => {
   try {
@@ -33,23 +33,24 @@ export const cancelSubscription = async (req, res, next) => {
           const refund = await refundPayment(paymentId);
           refundMessage = "سيتم استرداد المبلغ قريبا";
           console.log("Refund processed: ", refund.id || refund);
+          // Deactivate immediately since they were refunded
+          await deactivateGeneralSubscription(userId, subscription._id);
         } catch (refundError) {
           console.error(
             "Moyasar refund failed:",
             refundError?.response?.data || refundError.message,
           );
-          refundMessage =
-            "حدث خطأ في استرداد المبلغ لدى بوابة الدفع، يرجى التواصل مع الدعم.";
+          return next(new ApiError("حدث خطأ في استرداد المبلغ لدى بوابة الدفع، يرجى التواصل مع الدعم.", 500));
         }
       } else {
         refundMessage = "لا يمكن استرداد المبلغ لأنه بعد 3 أيام من الاشتراك";
+        // Keep active but mark as canceled
+        await cancelGeneralSubscription(userId, subscription._id);
       }
     } else {
       refundMessage = "لم يتم العثور على تفاصيل الدفع الخاصة بهذا الاشتراك.";
+      await cancelGeneralSubscription(userId, subscription._id);
     }
-
-    // Deactivate the general subscription
-    await deactivateGeneralSubscription(userId, subscription._id);
 
     // send email to user
     try {

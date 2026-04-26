@@ -151,7 +151,9 @@ const deleteReview = async (req, res, next) => {
     }
 
     const isReviewAuthor = review.user.toString() === req.user._id.toString();
-    const isContentInstructor = req.user.role === "instructor" && review.content.instructor.toString() === req.user._id.toString();
+    const isContentInstructor =
+      req.user.role === "instructor" &&
+      review.content.instructor.toString() === req.user._id.toString();
 
     if (!isReviewAuthor && !isContentInstructor && req.user.role !== "admin") {
       return next(
