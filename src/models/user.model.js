@@ -64,6 +64,9 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     password: { type: String },
+    authProvider: { type: String, default: "local" },
+    googleId: { type: String },
+    avatar: { type: String },
     profileImage: {
       key: String,
       url: String,

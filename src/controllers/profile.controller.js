@@ -202,6 +202,10 @@ const changePassword = async (req, res, next) => {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
     // check if current password is correct
+    if (!user.password) {
+      return next(new ApiError("عذراً، حسابك مسجل عبر جوجل ولا يحتوي على كلمة مرور. لا يمكنك تغيير كلمة المرور هنا.", 400));
+    }
+    
     if (!(await user.comparePassword(currentPassword))) {
       console.warn(`Failed password change attempt for user: ${user.email}`);
       return next(new ApiError("الباسوورد الحالي غير صحيح", 400));

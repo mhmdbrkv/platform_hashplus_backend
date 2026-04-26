@@ -353,14 +353,9 @@ const answerCourseModule = async (req, res, next) => {
         }
       }
 
-      const updatedAnswers = await CourseQuizAnswers.findByIdAndUpdate(
-        quizAnswers._id,
-        {
-          score: Math.round((score / quizArray.length) * 100),
-          status: score >= quizArray.length / 2 ? "pass" : "fail",
-        },
-        { returnDocument: "after" },
-      );
+      quizAnswers.score = Math.round((score / quizArray.length) * 100);
+      quizAnswers.status = score >= quizArray.length / 2 ? "pass" : "fail";
+      const updatedAnswers = await quizAnswers.save();
 
       res.status(201).json({
         status: "success",

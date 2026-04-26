@@ -1,4 +1,5 @@
 import Subscription from "../models/subscription.model.js";
+import User from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
 
 export const checkSubscription = async (req, res, next) => {

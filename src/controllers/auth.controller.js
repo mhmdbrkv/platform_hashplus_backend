@@ -220,18 +220,25 @@ const verifyOtp = async (req, res, next) => {
 // login
 const login = async (req, res, next) => {
   try {
-    if (req.user?.authProvider === "google") {
-      return res.status(409).json({
-        status: "failed",
-        message: `تم تسجيل الدخول من خلال حساب جوجل من قبل باستخدام  نفس البريد الاكتروني}`,
-      });
-    }
-
     const { email, password } = req.body;
 
     // find the user by email
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
+    
+    if (!user) {
+      return next(
+        new ApiError("البريد الإلكتروني او كلمة المرور غير صحيحة", 401),
+      );
+    }
+
+    if (user.authProvider === "google") {
+      return res.status(409).json({
+        status: "failed",
+        message: `تم تسجيل الدخول من خلال حساب جوجل من قبل باستخدام نفس البريد الاكتروني`,
+      });
+    }
+
+    if (!user.password || !(await user.comparePassword(password))) {
       return next(
         new ApiError("البريد الإلكتروني او كلمة المرور غير صحيحة", 401),
       );

@@ -109,12 +109,7 @@ const updateReview = async (req, res, next) => {
       return next(new ApiError("Review not found!", 404));
     }
 
-    if (
-      (req.user.role === "student" &&
-        reviewDoc.user.toString() !== req.user._id.toString()) ||
-      (req.user.role === "instructor" &&
-        reviewDoc.content.instructor.toString() !== req.user._id.toString())
-    ) {
+    if (reviewDoc.user.toString() !== req.user._id.toString()) {
       return next(
         new ApiError("You are not authorized to update this review!", 403),
       );
@@ -155,12 +150,10 @@ const deleteReview = async (req, res, next) => {
       return next(new ApiError("Review not found!", 404));
     }
 
-    if (
-      (req.user.role === "student" &&
-        review.user.toString() !== req.user._id.toString()) ||
-      (req.user.role === "instructor" &&
-        review.content.instructor.toString() !== req.user._id.toString())
-    ) {
+    const isReviewAuthor = review.user.toString() === req.user._id.toString();
+    const isContentInstructor = req.user.role === "instructor" && review.content.instructor.toString() === req.user._id.toString();
+
+    if (!isReviewAuthor && !isContentInstructor && req.user.role !== "admin") {
       return next(
         new ApiError("You are not authorized to delete this review!", 403),
       );

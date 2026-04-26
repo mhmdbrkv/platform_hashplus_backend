@@ -19,6 +19,8 @@ const getDashboardStats = async (req, res, next) => {
       bootcampsCount,
       topStudentsByLearning,
       popularInstructors,
+      students,
+      instructors,
     ] = await Promise.all([
       User.countDocuments({ role: "student" }),
       User.countDocuments({ role: "instructor" }),
@@ -118,18 +120,15 @@ const getDashboardStats = async (req, res, next) => {
           },
         },
       ]),
+      User.find({ role: "student" }).select("-password").limit(10),
+      User.find({ role: "instructor" })
+        .select("-password")
+        .sort({ createdAt: -1 })
+        .limit(10),
     ]);
 
     const usersCount = studentsCount + instructorsCount;
     const contentCount = coursesCount + bootcampsCount;
-
-    const students = await User.find({ role: "student" })
-      .select("-password")
-      .limit(10);
-    const instructors = await User.find({ role: "instructor" })
-      .select("-password")
-      .sort({ createdAt: -1 })
-      .limit(10);
 
     res.status(200).json({
       status: "success",
@@ -448,31 +447,36 @@ const getContentById = async (req, res, next) => {
     const content = await Content.findById(contentId).lean();
     if (!content) return next(new ApiError("Content not found", 404));
 
-    // Calculate metadata separately
-    const metadataAgg = await Learning.aggregate([
-      { $match: { content: new mongoose.Types.ObjectId(contentId) } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "userDoc",
-        },
-      },
-      { $unwind: "$userDoc" },
-      { $match: { "userDoc.isSubscribed": true } },
-      {
-        $group: {
-          _id: null,
-          totalStudents: { $sum: 1 },
-          totalCompleted: {
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-          },
-          totalInProgress: {
-            $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] },
+    const [metadataAgg, numOfLearningDocument] = await Promise.all([
+      // Calculate metadata separately
+      Learning.aggregate([
+        { $match: { content: new mongoose.Types.ObjectId(contentId) } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "userDoc",
           },
         },
-      },
+        { $unwind: "$userDoc" },
+        { $match: { "userDoc.isSubscribed": true } },
+        {
+          $group: {
+            _id: null,
+            totalStudents: { $sum: 1 },
+            totalCompleted: {
+              $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+            },
+            totalInProgress: {
+              $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+      Learning.countDocuments({
+        content: contentId,
+      }),
     ]);
 
     const meta = metadataAgg[0] || {
@@ -482,7 +486,6 @@ const getContentById = async (req, res, next) => {
     };
 
     // Use ApiFeatures for students list (paginated, sorted, filtered)
-    const numOfDocument = await Learning.countDocuments({ content: contentId });
     const apiFeatures = new ApiFeatures(
       Learning.find({ content: contentId }).populate(
         "user",
@@ -490,7 +493,7 @@ const getContentById = async (req, res, next) => {
       ),
       req.query,
     )
-      .paginate(numOfDocument)
+      .paginate(numOfLearningDocument)
       .filter()
       .sort();
 
