@@ -486,7 +486,7 @@ const updateOneBootcampModule = async (req, res, next) => {
     if (timezone) module.timezone = timezone;
     if (liveSession) module.liveSession = liveSession;
     if (video) module.video = { ...video, uploadedAt: new Date() };
-    if (projects) module.projects.push(...projects);
+    if (projects) module.projects = projects;
 
     await content.save();
 

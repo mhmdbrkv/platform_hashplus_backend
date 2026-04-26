@@ -12,13 +12,113 @@ import Review from "../models/review.model.js";
 // Get Dashboard Stats
 const getDashboardStats = async (req, res, next) => {
   try {
-    const [studentsCount, instructorsCount, coursesCount, bootcampsCount] =
-      await Promise.all([
-        User.countDocuments({ role: "student" }),
-        User.countDocuments({ role: "instructor" }),
-        Content.countDocuments({ contentType: "course" }),
-        Content.countDocuments({ contentType: "bootcamp" }),
-      ]);
+    const [
+      studentsCount,
+      instructorsCount,
+      coursesCount,
+      bootcampsCount,
+      topStudentsByLearning,
+      popularInstructors,
+    ] = await Promise.all([
+      User.countDocuments({ role: "student" }),
+      User.countDocuments({ role: "instructor" }),
+      Content.countDocuments({ contentType: "course" }),
+      Content.countDocuments({ contentType: "bootcamp" }),
+      // Most students in learning programs by progress
+      Learning.aggregate([
+        {
+          $group: {
+            _id: "$user",
+            coursesCount: { $sum: 1 },
+            avgProgress: { $avg: "$progress" },
+            totalProgress: { $sum: "$progress" },
+          },
+        },
+        {
+          $sort: { totalProgress: -1 },
+        },
+        {
+          $limit: 5,
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "student",
+          },
+        },
+        {
+          $unwind: {
+            path: "$student",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            studentId: "$_id",
+            name: "$student.name",
+            email: "$student.email",
+            coursesCount: 1,
+            avgProgress: { $round: ["$avgProgress", 0] },
+            totalProgress: 1,
+          },
+        },
+      ]),
+      // Most popular instructors that students learn from them
+      Learning.aggregate([
+        {
+          $lookup: {
+            from: "contents",
+            localField: "content",
+            foreignField: "_id",
+            as: "contentDoc",
+          },
+        },
+        {
+          $unwind: {
+            path: "$contentDoc",
+            preserveNullAndEmptyArrays: false,
+          },
+        },
+        {
+          $group: {
+            _id: "$contentDoc.instructor",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { count: -1 },
+        },
+        {
+          $limit: 5,
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "instructor",
+          },
+        },
+        {
+          $unwind: {
+            path: "$instructor",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            instructorId: "$_id",
+            name: "$instructor.name",
+            email: "$instructor.email",
+            count: 1,
+          },
+        },
+      ]),
+    ]);
 
     const usersCount = studentsCount + instructorsCount;
     const contentCount = coursesCount + bootcampsCount;
@@ -30,102 +130,6 @@ const getDashboardStats = async (req, res, next) => {
       .select("-password")
       .sort({ createdAt: -1 })
       .limit(10);
-
-    // Most students in learning programs by progress
-    const topStudentsByLearning = await Learning.aggregate([
-      {
-        $group: {
-          _id: "$user",
-          coursesCount: { $sum: 1 },
-          avgProgress: { $avg: "$progress" },
-          totalProgress: { $sum: "$progress" },
-        },
-      },
-      {
-        $sort: { totalProgress: -1 },
-      },
-      {
-        $limit: 5,
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "student",
-        },
-      },
-      {
-        $unwind: {
-          path: "$student",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          studentId: "$_id",
-          name: "$student.name",
-          email: "$student.email",
-          coursesCount: 1,
-          avgProgress: { $round: ["$avgProgress", 0] },
-          totalProgress: 1,
-        },
-      },
-    ]);
-
-    // Most popular instructors that students learn from them
-    const popularInstructors = await Learning.aggregate([
-      {
-        $lookup: {
-          from: "contents",
-          localField: "content",
-          foreignField: "_id",
-          as: "contentDoc",
-        },
-      },
-      {
-        $unwind: {
-          path: "$contentDoc",
-          preserveNullAndEmptyArrays: false,
-        },
-      },
-      {
-        $group: {
-          _id: "$contentDoc.instructor",
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { count: -1 },
-      },
-      {
-        $limit: 5,
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "instructor",
-        },
-      },
-      {
-        $unwind: {
-          path: "$instructor",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          instructorId: "$_id",
-          name: "$instructor.name",
-          email: "$instructor.email",
-          count: 1,
-        },
-      },
-    ]);
 
     res.status(200).json({
       status: "success",
@@ -152,54 +156,58 @@ const getDashboardStats = async (req, res, next) => {
 // Get Dashboard Analytics
 const getDashboardAnalytics = async (req, res, next) => {
   try {
-    const [coursesCount, bootcampsCount, studentsCount, instructorsCount] =
-      await Promise.all([
-        Content.countDocuments({ contentType: "course" }),
-        Content.countDocuments({ contentType: "bootcamp" }),
-        User.countDocuments({ role: "student" }),
-        User.countDocuments({ role: "instructor" }),
-      ]);
+    const [
+      coursesCount,
+      bootcampsCount,
+      studentsCount,
+      instructorsCount,
+      popularCategories,
+    ] = await Promise.all([
+      Content.countDocuments({ contentType: "course" }),
+      Content.countDocuments({ contentType: "bootcamp" }),
+      User.countDocuments({ role: "student" }),
+      User.countDocuments({ role: "instructor" }),
+      Content.aggregate([
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { count: -1 },
+        },
+        {
+          $limit: 5,
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "_id",
+            foreignField: "_id",
+            as: "category",
+          },
+        },
+        {
+          $unwind: {
+            path: "$category",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            categoryId: "$_id",
+            name: "$category.name",
+            slug: "$category.slug",
+            count: 1,
+          },
+        },
+      ]),
+    ]);
 
     const contentCount = coursesCount + bootcampsCount;
     const usersCount = studentsCount + instructorsCount;
-
-    const popularCategories = await Content.aggregate([
-      {
-        $group: {
-          _id: "$category",
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { count: -1 },
-      },
-      {
-        $limit: 5,
-      },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "_id",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      {
-        $unwind: {
-          path: "$category",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          categoryId: "$_id",
-          name: "$category.name",
-          slug: "$category.slug",
-          count: 1,
-        },
-      },
-    ]);
 
     res.status(200).json({
       status: "success",

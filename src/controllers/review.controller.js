@@ -80,7 +80,9 @@ const createReview = async (req, res, next) => {
     });
 
     //Applying aggregation after creating a review
-    aggregateRatings(content, Review, Content);
+    aggregateRatings(content, Review, Content).catch((err) => {
+      console.error("aggregateRatings failed:", err);
+    });
 
     res.status(201).json({
       status: "success",
@@ -125,7 +127,9 @@ const updateReview = async (req, res, next) => {
     );
 
     //Applying aggregation after updating a review
-    aggregateRatings(reviewDoc.content._id, Review, Content);
+    aggregateRatings(reviewDoc.content._id, Review, Content).catch((err) => {
+      console.error("aggregateRatings failed:", err);
+    });
 
     res.status(200).json({
       status: "success",
@@ -165,7 +169,9 @@ const deleteReview = async (req, res, next) => {
     await Review.findByIdAndDelete(reviewId);
 
     //Applying aggregation after deleting a review
-    aggregateRatings(review.content._id, Review, Content);
+    aggregateRatings(review.content._id, Review, Content).catch((err) => {
+      console.error("aggregateRatings failed:", err);
+    });
 
     res.status(204).json({
       status: "success",

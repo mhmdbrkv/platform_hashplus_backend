@@ -10,10 +10,11 @@ export const checkSubscription = async (req, res, next) => {
     });
 
     if (!subscription) {
-      req.user.isSubscribed = false;
-      req.user.subscriptionEndDate = null;
-      req.user.subscriptionStartDate = null;
-      await req.user.save();
+      await User.findByIdAndUpdate(req.user._id, {
+        isSubscribed: false,
+        subscriptionEndDate: null,
+        subscriptionStartDate: null,
+      });
       return next(new ApiError("No subscription found", 404));
     }
 
@@ -24,10 +25,11 @@ export const checkSubscription = async (req, res, next) => {
         },
       });
 
-      req.user.isSubscribed = false;
-      req.user.subscriptionEndDate = null;
-      req.user.subscriptionStartDate = null;
-      await req.user.save();
+      await User.findByIdAndUpdate(req.user._id, {
+        isSubscribed: false,
+        subscriptionEndDate: null,
+        subscriptionStartDate: null,
+      });
 
       return next(new ApiError("Subscription has expired", 403));
     }

@@ -251,8 +251,7 @@ const login = async (req, res, next) => {
     await storeRefreshToken(user._id, refreshToken);
 
     // update last login
-    user.lastLogin = new Date();
-    await user.save();
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
     res.status(200).json({
       status: "success",
@@ -378,6 +377,13 @@ const refreshToken = async (req, res, next) => {
 
     if (!storedRefresh || storedRefresh !== oldRefreshToken) {
       return next(new ApiError("Invalid refresh token", 401));
+    }
+
+    const user = await User.findById(decoded.userId).select(
+      "otpIsVerified isActive",
+    );
+    if (!user || !user.otpIsVerified || !user.isActive) {
+      return next(new ApiError("Account not verified or inactive", 403));
     }
 
     // Token is valid → ROTATE refresh token
