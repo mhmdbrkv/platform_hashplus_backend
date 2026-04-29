@@ -3,16 +3,14 @@ import mongoose from "mongoose";
 
 export const mongoIdSchema = (fieldName) =>
   z.object({
-    params: z
-      .object({
-        [fieldName]: z
-          .string()
-          .refine(
-            (value) => mongoose.isValidObjectId(value),
-            `${fieldName} must be a valid MongoDB ID`,
-          ),
-      })
-      .strict(),
+    params: z.object({
+      [fieldName]: z
+        .string()
+        .refine(
+          (value) => mongoose.isValidObjectId(value),
+          `${fieldName} must be a valid MongoDB ID`,
+        ),
+    }),
   });
 
 export const paginationSchema = z.object({

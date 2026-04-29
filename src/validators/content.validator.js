@@ -36,6 +36,7 @@ const thumbnailSchema = z
   .object({
     url: z.url().trim(),
     key: z.string().trim(),
+    uploadId: z.string().trim(),
   })
   .strict();
 
@@ -112,25 +113,6 @@ export const updateContentSchema = z.object({
       totalProjects: z.coerce.number().optional(),
     })
     .strict()
-    .refine(
-      (data) => {
-        if (data.contentType === "bootcamp" && !data.startDate) {
-          return false;
-        }
-        if (data.contentType === "bootcamp" && !data.endDate) {
-          return false;
-        }
-        if (data.contentType === "bootcamp" && !data.totalProjects) {
-          return false;
-        }
-        return true;
-      },
-      {
-        message:
-          "startDate, endDate, and totalProjects are required for bootcamp",
-        path: ["contentType"],
-      },
-    )
     .refine(
       (data) => Object.keys(data).length > 0,
       "At least one field is required",

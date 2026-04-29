@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
-import { Content, Course, Bootcamp } from "../models/content.model.js";
+import { Content, Course } from "../models/content.model.js";
 import {
   UserAnswersModel,
   CourseQuizAnswers,
@@ -397,147 +396,12 @@ const getCourseModuleAnswers = async (req, res, next) => {
   }
 };
 
-//------------------------ BOOTCAMP ------------------------//
-
-const addBootcampModule = async (req, res, next) => {
-  try {
-    const {
-      title,
-      description,
-      liveSession,
-      video,
-      timeStart,
-      timeEnd,
-      timezone,
-      projects,
-    } = req.body || {};
-
-    const { contentId } = req.params;
-
-    const content = await Bootcamp.findById(contentId);
-
-    if (!content) {
-      return next(new ApiError(`No content found with id: ${contentId}`, 404));
-    }
-
-    let data = {
-      title,
-      description,
-      liveSession,
-      video: video ? { ...video, uploadedAt: new Date() } : undefined,
-      timeStart,
-      timeEnd,
-      timezone,
-      projects,
-    };
-
-    content.modules.push(data);
-    await content.save();
-
-    res.status(201).json({
-      status: "success",
-      message: "Module Added Successfully!",
-      data: {
-        _id: content.modules[content.modules.length - 1]._id,
-        ...data,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    next(new ApiError("Error adding bootcamp module.", 400));
-  }
-};
-
-const updateOneBootcampModule = async (req, res, next) => {
-  try {
-    const { contentId } = req.params;
-    const { moduleId } = req.params;
-
-    const {
-      title,
-      description,
-      liveSession,
-      video,
-      timeStart,
-      timeEnd,
-      timezone,
-      projects,
-    } = req.body || {};
-
-    const content = await Bootcamp.findById(contentId);
-
-    if (!content) {
-      return next(new ApiError("No module found with this id.", 404));
-    }
-
-    const module = content.modules.id(moduleId);
-
-    if (!module) return next(new ApiError("No Module Found", 404));
-
-    if (title) module.title = title;
-    if (description) module.description = description;
-    if (timeStart) module.timeStart = timeStart;
-    if (timeEnd) module.timeEnd = timeEnd;
-    if (timezone) module.timezone = timezone;
-    if (liveSession) module.liveSession = liveSession;
-    if (video) module.video = { ...video, uploadedAt: new Date() };
-    if (projects) module.projects = projects;
-
-    await content.save();
-
-    res.status(200).json({
-      status: "success",
-      message: "Module Updated Successfully!",
-      data: content,
-    });
-  } catch (error) {
-    console.error(error);
-    next(new ApiError("Error updating module.", 400));
-  }
-};
-
-const removeOneBootcampModule = async (req, res, next) => {
-  try {
-    const { contentId } = req.params;
-    const { moduleId } = req.params;
-
-    const content = await Bootcamp.findById(contentId);
-
-    if (!content) {
-      return next(new ApiError("No module found with this id.", 404));
-    }
-
-    const module = content.modules.id(moduleId);
-
-    if (!module) {
-      return next(new ApiError("No module found with this id.", 404));
-    }
-
-    // TODO: If video moduleType, delete from R2 storage here
-
-    content.modules.pull(moduleId);
-
-    await content.save();
-
-    res.status(200).json({
-      status: "success",
-      message: "Module Removed Successfully!",
-    });
-  } catch (error) {
-    console.error(error);
-    next(new ApiError("Error removing module.", 400));
-  }
-};
-
 export {
   getMyModuleForInstructor,
   getOneModule,
   addCourseModule,
   updateOneCourseModule,
   removeOneCourseModule,
-  addBootcampModule,
-  updateOneBootcampModule,
-  removeOneBootcampModule,
   answerCourseModule,
   getCourseModuleAnswers,
 };

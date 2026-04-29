@@ -79,6 +79,7 @@ const contentSchema = new mongoose.Schema(
     thumbnail: {
       url: { type: String, default: "" },
       key: { type: String, default: "" },
+      uploadId: { type: String, default: "" },
       uploadedAt: Date,
       _id: false,
     },
@@ -141,7 +142,7 @@ contentSchema.pre("save", async function () {
 // ─────────────────────────────────────────────
 
 // Base module schema — discriminatorKey matches the existing "moduleType" field
-const moduleSchema = new mongoose.Schema(
+const courseModuleSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
@@ -158,7 +159,6 @@ const videoModuleSchema = new mongoose.Schema({
     size: { type: Number, default: 0 },
     duration: { type: Number, default: 0 },
     uploadedAt: Date,
-    _id: false,
   },
 });
 
@@ -180,7 +180,6 @@ const taskModuleSchema = new mongoose.Schema({
     imageUrl: { type: String, default: "", trim: true },
     description: { type: String, default: "", trim: true },
     uploadedAt: Date,
-    _id: false,
   },
 });
 
@@ -188,7 +187,6 @@ const linkModuleSchema = new mongoose.Schema({
   link: {
     url: { type: String, default: "", trim: true },
     date: { type: Date, required: true },
-    _id: false,
   },
 });
 
@@ -197,47 +195,53 @@ const linkModuleSchema = new mongoose.Schema({
 // ─────────────────────────────────────────────
 const courseSchema = new mongoose.Schema(
   {
-    modules: [moduleSchema],
+    modules: [courseModuleSchema],
   },
   { _id: false, timestamps: true },
 );
 
 // Register module discriminators on the modules array path
-const modulesArray = courseSchema.path("modules");
-modulesArray.discriminator("video", videoModuleSchema);
-modulesArray.discriminator("quiz", quizModuleSchema);
-modulesArray.discriminator("task", taskModuleSchema);
-modulesArray.discriminator("link", linkModuleSchema);
+const modulesArrayCourse = courseSchema.path("modules");
+modulesArrayCourse.discriminator("video", videoModuleSchema);
+modulesArrayCourse.discriminator("quiz", quizModuleSchema);
+modulesArrayCourse.discriminator("task", taskModuleSchema);
+modulesArrayCourse.discriminator("link", linkModuleSchema);
+
+// ─────────────────────────────────────────────
+// Module subdocument discriminators (Bootcamp)
+// ─────────────────────────────────────────────
+
+// Base module schema — discriminatorKey matches the existing "moduleType" field
+const bootcampModuleSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    description: { type: String, required: true, trim: true },
+    order: { type: Number, default: 0 }, // ✅ Explicit ordering field
+  },
+  { discriminatorKey: "moduleType", _id: true },
+);
+
+const liveSessionModuleSchema = new mongoose.Schema({
+  liveSession: {
+    startTime: String, // "09:00"
+    endTime: String, // "17:00"
+    timezone: { type: String, default: "Asia/Riyadh" },
+    date: { type: Date, required: true },
+    meetLink: { type: String, default: "", trim: true },
+    liveStreamUrl: { type: String, default: "", trim: true },
+  },
+});
 
 // ─────────────────────────────────────────────
 // Bootcamp Schema
 // ─────────────────────────────────────────────
 const bootcampSchema = new mongoose.Schema(
   {
-    startDate: Date,
-    endDate: Date,
-
-    modules: [
+    sections: [
       {
         title: { type: String, required: true, trim: true },
         description: { type: String, required: true, trim: true },
-
-        timeStart: String, // "09:00"
-        timeEnd: String, // "17:00"
-        timezone: { type: String, default: "Asia/Riyadh" },
-
-        liveSession: { type: String, default: "", trim: true },
-
-        video: {
-          url: { type: String, default: "", trim: true },
-          key: { type: String, default: "", trim: true },
-          uploadId: { type: String, default: "", trim: true },
-          duration: { type: Number, default: 0 },
-          size: { type: Number, default: 0 },
-          uploadedAt: Date,
-          _id: false,
-        },
-
+        modules: [bootcampModuleSchema],
         projects: [
           {
             title: { type: String, required: true, trim: true },
@@ -249,10 +253,19 @@ const bootcampSchema = new mongoose.Schema(
       },
     ],
 
+    startDate: Date,
+    endDate: Date,
     totalProjects: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
+
+// Register module discriminators on the modules array path
+const modulesArrayBootcamp = bootcampSchema.path("sections.modules");
+modulesArrayBootcamp.discriminator("liveSession", liveSessionModuleSchema);
+modulesArrayBootcamp.discriminator("video", videoModuleSchema);
+modulesArrayBootcamp.discriminator("quiz", quizModuleSchema);
+modulesArrayBootcamp.discriminator("task", taskModuleSchema);
 
 // ─────────────────────────────────────────────
 // Indexes

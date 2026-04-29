@@ -1,0 +1,157 @@
+import { z } from "zod";
+import mongoose from "mongoose";
+
+const isObjectId = (schema, fieldName = "ID") =>
+  schema.refine(
+    (value) => mongoose.isValidObjectId(value),
+    `${fieldName} must be a valid MongoDB ID`,
+  );
+
+export const sectionAndModuleParamsSchema = z.object({
+  params: z.object({
+    sectionId: isObjectId(z.string(), "sectionId"),
+    moduleId: isObjectId(z.string(), "moduleId"),
+  }),
+});
+
+// live Session Data
+const liveSessionBaseSchema = z.object({
+  date: z.coerce.date(),
+  startTime: z.string(),
+  endTime: z.string(),
+  timezone: z.string(),
+  meetLink: z.url().trim(),
+  liveStreamUrl: z.url().trim(),
+});
+
+// video Data
+const videoDataSchema = z.object({
+  url: z.url().trim(),
+  size: z.coerce.number(),
+  duration: z.coerce.number(),
+  key: z.string().trim(),
+  uploadId: z.string().trim(),
+});
+
+// Quiz Data
+const quizDataSchema = z.array(
+  z
+    .object({
+      question: z.string().trim().min(3).max(100),
+      options: z.array(z.string().trim().min(3).max(100)),
+      answer: z.string().trim().min(3).max(100),
+    })
+    .refine((data) => data.options.length >= 2, {
+      message: "Options must be at least two",
+      path: ["options"],
+    })
+    .refine((data) => data.options.includes(data.answer), {
+      message: "Answer must be in options",
+      path: ["answer"],
+    }),
+);
+
+// Task Data
+const taskDataSchema = z.object({
+  url: z.url().trim(),
+  imageUrl: z.url().trim(),
+  description: z.string().trim().min(3).max(100),
+});
+
+// Projects Data
+const projectsBaseSchema = z.array(
+  z.object({
+    title: z.string().trim().min(3).max(100),
+    description: z.string().trim().min(3).max(100),
+    githubUrl: z.url().trim(),
+    liveDemoUrl: z.url().trim(),
+  }),
+);
+
+export const addBootcampModuleSchema = z.object({
+  body: z
+    .object({
+      moduleType: z.enum(["video", "liveSession", "quiz", "task"]),
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(100),
+
+      videoData: videoDataSchema.optional(),
+      quizData: quizDataSchema.optional(),
+      taskData: taskDataSchema.optional(),
+      liveSessionData: liveSessionBaseSchema.optional(),
+    })
+    .strict()
+    .refine(
+      (data) => data.moduleType !== "video" || data.videoData !== undefined,
+      "videoData is required for video modules",
+    )
+    .refine(
+      (data) => data.moduleType !== "quiz" || data.quizData !== undefined,
+      "quizData is required for quiz modules",
+    )
+    .refine(
+      (data) => data.moduleType !== "task" || data.taskData !== undefined,
+      "taskData is required for task modules",
+    )
+    .refine(
+      (data) =>
+        data.moduleType !== "liveSession" || data.liveSessionData !== undefined,
+      "liveSessionData is required for liveSession modules",
+    ),
+
+  params: z.object({
+    sectionId: isObjectId(z.string(), "sectionId"),
+  }),
+});
+
+export const updateOneBootcampModuleSchema = z.object({
+  body: z
+    .object({
+      moduleType: z.enum(["video", "liveSession", "quiz", "task"]),
+      title: z.string().trim().min(3).max(100).optional(),
+      description: z.string().trim().min(3).max(100).optional(),
+      videoData: videoDataSchema.optional(),
+      quizData: quizDataSchema.optional(),
+      taskData: taskDataSchema.optional(),
+      liveSessionData: liveSessionBaseSchema.optional(),
+    })
+    .strict()
+    .refine(
+      (data) => Object.keys(data).length > 0,
+      "At least one field is required",
+    ),
+
+  params: z.object({
+    sectionId: isObjectId(z.string(), "sectionId"),
+    moduleId: isObjectId(z.string(), "moduleId"),
+  }),
+});
+
+export const addBootcampSectionSchema = z.object({
+  body: z
+    .object({
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(100),
+      projects: projectsBaseSchema.optional(),
+    })
+    .strict(),
+});
+
+export const updateOneBootcampSectionSchema = z.object({
+  body: z
+    .object({
+      title: z.string().trim().min(3).max(100),
+      description: z.string().trim().min(3).max(100),
+      projects: projectsBaseSchema.optional(),
+    })
+    .strict()
+    .partial()
+    .refine(
+      (data) => Object.keys(data).length > 0,
+      "At least one field is required",
+    ),
+
+  params: z.object({
+    sectionId: isObjectId(z.string(), "sectionId"),
+  }),
+});
