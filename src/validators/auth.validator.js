@@ -23,6 +23,7 @@ export const loginSchema = z.object({
 export const otpSchema = z.object({
   body: z
     .object({
+      email: z.email().trim().toLowerCase(),
       otp: z
         .string()
         .trim()
@@ -43,6 +44,7 @@ export const forgotPasswordSchema = z.object({
 export const verifyResetCodeSchema = z.object({
   body: z
     .object({
+      email: z.email().trim().toLowerCase(),
       resetCode: z
         .string()
         .trim()
