@@ -224,7 +224,7 @@ const login = async (req, res, next) => {
 
     // find the user by email
     const user = await User.findOne({ email });
-    
+
     if (!user) {
       return next(
         new ApiError("البريد الإلكتروني او كلمة المرور غير صحيحة", 401),
@@ -276,13 +276,13 @@ const login = async (req, res, next) => {
 // googleAuth
 const googleAuth = async (req, res, next) => {
   try {
-    const { id_token } = req.body;
+    const { token } = req.body;
 
-    if (!id_token) {
+    if (!token) {
       return next(new ApiError("توكن الدخول لحساب جوجل مطلوب", 400));
     }
 
-    const payload = await verify(id_token);
+    const payload = await verify(token);
 
     // Validate audience
     if (payload.aud !== GOOGLE_CLIENT_ID && payload.azp !== GOOGLE_CLIENT_ID) {
