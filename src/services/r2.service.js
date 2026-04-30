@@ -15,7 +15,7 @@ export const startMultipartUpload = async (fileName, fileType, userId) => {
   const key = `uploads/${userId}/${uuid()}/${fileName}`;
 
   const command = new CreateMultipartUploadCommand({
-    Bucket: "courses-videos",
+    Bucket: R2_BUCKET,
     Key: key,
     ContentType: fileType,
   });

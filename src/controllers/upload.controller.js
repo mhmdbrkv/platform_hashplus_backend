@@ -32,7 +32,11 @@ export const startUpload = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       message: "Pre-Signed URLs Generated Successfuly!",
-      data: urls,
+      data: {
+        key,
+        uploadId,
+        urls,
+      },
     });
   } catch (error) {
     console.error(error);
